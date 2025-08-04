@@ -119,6 +119,18 @@ const Login = ({ setUser }) => {
           </button>
         </form>
 
+        <div className="auth-divider">
+          <span>or</span>
+        </div>
+
+        <button
+          type="button"
+          onClick={onAuth0Login}
+          className="auth0-login-btn"
+        >
+          Google
+        </button>
+
         <p className="auth-link">
           Don't have an account? <Link to="/signup">Sign up</Link>
         </p>
