@@ -42,6 +42,9 @@ const App = () => {
     } catch {
       console.log("Not authenticated");
       setUser(null);
+      setIsAuth(false);
+    } finally {
+      setLoading(false);
     }
   };
 
