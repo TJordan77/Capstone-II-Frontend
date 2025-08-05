@@ -129,13 +129,13 @@ const Login = ({ setUser, onAuth0Login}) => {
           Auth
         </button>
         
-        <button
+        {/* <button
         type="button"
         onClick={onAuth0Login}
         className="auth0-google-btn"
         >
           Login with Google
-        </button>
+        </button> */}
 
         <p className="auth-link">
           Don't have an account? <Link to="/signup">Sign up</Link>
