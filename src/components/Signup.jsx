@@ -4,11 +4,13 @@ import axios from "axios";
 import "./AuthStyles.css";
 import { API_URL } from "../shared";
 
-const Signup = ({ setUser }) => {
+const Signup = ({ setUser, onAuth0Login }) => {
   const [formData, setFormData] = useState({
-    username: "",
+    email: "",
     password: "",
     confirmPassword: "",
+    firstname: "",
+    lastname: "",
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -16,11 +18,17 @@ const Signup = ({ setUser }) => {
 
   const validateForm = () => {
     const newErrors = {};
+    
+    if (!formData.firstname) {
+      newErrors.firstname = "First name is required";
+    }
 
-    if (!formData.username) {
-      newErrors.username = "Username is required";
-    } else if (formData.username.length < 3 || formData.username.length > 20) {
-      newErrors.username = "Username must be between 3 and 20 characters";
+    if (!formData.lastname) {
+      newErrors.lastname = "Last name is required";
+    }
+
+    if (!formData.email) {
+      newErrors.email = "email is required";
     }
 
     if (!formData.password) {
@@ -51,8 +59,11 @@ const Signup = ({ setUser }) => {
       const response = await axios.post(
         `${API_URL}/auth/signup`,
         {
-          username: formData.username,
+          email: formData.email,
           password: formData.password,
+          confirmPassword: formData.confirmPassword,
+          firstname: formData.firstname,
+          lastname: formData.lastname,
         },
         { withCredentials: true }
       );
@@ -97,17 +108,47 @@ const Signup = ({ setUser }) => {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="username">Username:</label>
+            <label htmlFor="firstname">First Name:</label>
+            <input
+              type="firstname"
+              id="firstname"
+              name="firstname"
+              value={formData.firstname}
+              onChange={handleChange}
+              className={errors.firstname ? "error" : ""}
+            />
+            {errors.firstname && (
+              <span className="error-text">{errors.firstname}</span>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="lastname">Last Name:</label>
             <input
               type="text"
-              id="username"
-              name="username"
-              value={formData.username}
+              id="lastname"
+              name="lastname"
+              value={formData.lastname}
               onChange={handleChange}
-              className={errors.username ? "error" : ""}
+              className={errors.lastname ? "error" : ""}
             />
-            {errors.username && (
-              <span className="error-text">{errors.username}</span>
+            {errors.lastname && (
+              <span className="error-text">{errors.lastname}</span>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="email">Email:</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className={errors.email ? "error" : ""}
+            />
+            {errors.email && (
+              <span className="error-text">{errors.email}</span>
             )}
           </div>
 
@@ -125,7 +166,6 @@ const Signup = ({ setUser }) => {
               <span className="error-text">{errors.password}</span>
             )}
           </div>
-
           <div className="form-group">
             <label htmlFor="confirmPassword">Confirm Password:</label>
             <input
