@@ -49,14 +49,15 @@
 }
 
 .brand-name {
-  font-size: 3rem;
-  font-weight: 700;
+  font-size: 2.1rem; /* was 3rem */
+  font-weight: 800; /* was 700 */
   color: white;
   letter-spacing: 1px;
 }
 
 .home-logo {
-  height: 150px;
+  height: 84px;      /* was 150px */
+  width: auto;
 }
 
 .home-nav-buttons {
@@ -67,11 +68,12 @@
 .home-nav-btn {
   color: white;
   background: rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
   transition: background 0.3s;
-  padding: 1rem 1.8rem;
-  font-size: 2rem;
+  padding: .55rem 1rem; /* was 1rem 1.8rem */
+  font-size: 1rem;      /* was 2rem */
+  border-radius: 10px; /* was 8px */
 }
+
 .home-nav-btn:hover {
   background: rgba(0, 0, 0, 0.6);
 }
@@ -100,10 +102,11 @@
 }
 
 .home-hero-text h1 {
-  font-size: 3.5rem;
   margin-bottom: 2rem;
   line-height: 1.3;
   color: white;
+  font-size: 3rem;   /* was 3.5rem */
+  line-height: 1.2; /* was 1.2 */
 }
 
 .cta-buttons {
@@ -140,7 +143,7 @@
   justify-content: center;
 }
 .home-hero-image img {
-  width: 500px;
+  width: 520px;      /* was 500px (fine), bump to 520 for balance */
   max-width: 100%;
   height: auto;
 }
@@ -169,8 +172,8 @@
 }
 
 .feature-card img {
-  width: 70px;
   margin-bottom: 1.25rem;
+  width: 60px;       /* was 70px */
 }
 
 .feature-card h3 {
@@ -184,8 +187,18 @@
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+  .home-logo { height: 72px; }
+  .brand-name { font-size: 1.8rem; }
+  .home-hero-text h1 { font-size: 2.4rem; }
+  .home-hero-image img { width: 380px; }
+}
+
 @media (max-width: 600px) {
+  .home-logo { height: 60px; }
+  .brand-name { font-size: 1.5rem; }
+  .home-nav-btn { font-size: .95rem; padding: .5rem .9rem; }
   .home-hero-text h1 { font-size: 2rem; }
   .home-hero-image img { width: 300px; }
-  .feature-card { width: 90%; }
+  .feature-card { width: 92%; }  /* was 92% */
 }
