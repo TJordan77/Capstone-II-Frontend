@@ -25,6 +25,7 @@ const App = () => {
     user: auth0User,
     loginWithRedirect,
     logout: auth0Logout,
+    isLoading: auth0Loading,
   } = useAuth0();
 
   useEffect(() => {
@@ -107,13 +108,23 @@ const App = () => {
     loginWithRedirect();
   };
 
+  // Show NavBar only when logged in (backend user OR Auth0)
+  const showNav = !!user || isAuthenticated;
+  
   if (loading) {
     return <div className="app">Loading...</div>;
   }
 
   return (
     <div>
-      <NavBar user={user} onLogout={handleLogout} onAuth0Login={handleAuth0LoginClick} iAuth0Authenticated={isAuthenticated}/>
+      {showNav && (
+          <NavBar
+            user={user}
+            onLogout={handleLogout}
+            onAuth0Login={handleAuth0LoginClick}
+            isAuth0Authenticated={isAuthenticated}
+          />
+        )}
       <div className="app">
         <Routes>
           <Route path="/login" element={<Login setUser={setUser} onAuth0Login={handleAuth0LoginClick}  />} />
