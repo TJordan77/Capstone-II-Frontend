@@ -2,6 +2,7 @@ const path = require("path");
 const webpack = require("webpack");
 require("dotenv").config();
 const CopyWebpackPlugin = require("copy-webpack-plugin");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 module.exports = {
   mode: "development",
@@ -21,7 +22,12 @@ module.exports = {
       REACT_APP_AUTH0_CLIENT_ID: "",
       REACT_APP_AUTH0_AUDIENCE: "",
     }),
-    new CopyWebpackPlugin({ patterns: [{ from: "public", to: "." }] }),
+    // Generate dist/index.html that loads main.js
+    new HtmlWebpackPlugin({
+      template: path.resolve(__dirname, "public/index.html"),
+      inject: "body",
+    }),
+    new CopyWebpackPlugin({ patterns: [{ from: "public", to: ".", globOptions: { ignore: ["**/index.html"] } }] }),
   ],
   module: {
     rules: [
