@@ -59,7 +59,7 @@ const App = () => {
 
   return (
     <div>
-      <NavBar user={user} onLogout={handleLogout} />
+      {user && <NavBar user={user} onLogout={handleLogout} />}  {/* <- hide when logged out */}
       <div className="app">
         <Routes>
           <Route path="/login" element={<Login setUser={setUser} />} />
