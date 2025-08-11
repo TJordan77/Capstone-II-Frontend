@@ -256,14 +256,27 @@
 
 /* Also shrink nav buttons a bit on smaller screens */
 @media (max-width: 768px) {
+  .home-navbar {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .brand-name {
+    font-size: clamp(1.2rem, 3.5vw, 2rem);
+  }
+
+  .home-logo {
+    height: clamp(40px, 7vw, 60px);
+  }
+
   .home-nav-btn {
-    font-size: clamp(0.9rem, 2.5vw, 1.5rem);
-    padding: 0.5rem 1rem;
+    font-size: clamp(0.8rem, 2.5vw, 1rem);
+    padding: 0.4rem 0.8rem;
   }
   .home-nav-buttons {
     gap: 0.5rem;
   }
 }
+
 
 /* Keep your original tiny-phone rules but expand them slightly */
 @media (max-width: 600px) {
