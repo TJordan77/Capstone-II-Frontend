@@ -168,7 +168,7 @@ export default function CreateHunt() {
             <label>
               Hunt Name <span className="req">*</span>
             </label>
-            <input placeholder="e.g. Downtown Dash" defaultValue="Castaways' Coronet" />
+            <input placeholder="e.g. Downtown Dash" />
           </div>
 
           <div className="field">
