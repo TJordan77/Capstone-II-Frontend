@@ -1,6 +1,7 @@
 const path = require("path");
 const webpack = require("webpack");
 require("dotenv").config();
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = {
   mode: "development",
@@ -20,6 +21,7 @@ module.exports = {
       REACT_APP_AUTH0_CLIENT_ID: "",
       REACT_APP_AUTH0_AUDIENCE: "",
     }),
+    new CopyWebpackPlugin({ patterns: [{ from: "public", to: "." }] }),
   ],
   module: {
     rules: [
@@ -43,9 +45,10 @@ module.exports = {
     extensions: [".js", ".jsx"],
   },
   devServer: {
-    static: {
-      directory: path.join(__dirname, "dist"),
-    },
+    static: [
+      { directory: path.join(__dirname, "public"), publicPath: "/" },
+      { directory: path.join(__dirname, "dist"), publicPath: "/" },
+    ],
     compress: true,
     historyApiFallback: true,
     port: 3000,

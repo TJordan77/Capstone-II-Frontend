@@ -4,7 +4,7 @@ import axios from "axios";
 import { API_URL } from "../shared";
 import "./AuthStyles.css";
 
-const Login = ({ setUser }) => {
+const Login = ({ setUser, onAuth0Login}) => {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -85,18 +85,16 @@ const Login = ({ setUser }) => {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="username">Username:</label>
+            <label htmlFor="email">Email:</label>
             <input
-              type="text"
-              id="username"
-              name="username"
-              value={formData.username}
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
               onChange={handleChange}
-              className={errors.username ? "error" : ""}
+              className={errors.email ? "error" : ""}
             />
-            {errors.username && (
-              <span className="error-text">{errors.username}</span>
-            )}
+            {errors.email && <span className="error-text">{errors.email}</span>}
           </div>
 
           <div className="form-group">
@@ -118,6 +116,26 @@ const Login = ({ setUser }) => {
             {isLoading ? "Logging in..." : "Login"}
           </button>
         </form>
+
+        <div className="auth-divider">
+          <span>or</span>
+        </div>
+
+        <button
+          type="button"
+          onClick={onAuth0Login}
+          className="auth0-login-btn"
+        >
+          Auth
+        </button>
+        
+        {/* <button
+        type="button"
+        onClick={onAuth0Login}
+        className="auth0-google-btn"
+        >
+          Login with Google
+        </button> */}
 
         <p className="auth-link">
           Don't have an account? <Link to="/signup">Sign up</Link>

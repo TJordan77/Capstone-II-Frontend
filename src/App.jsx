@@ -10,13 +10,23 @@ import Home from "./components/Home";
 import NotFound from "./components/NotFound";
 import { API_URL, SOCKETS_URL, NODE_ENV } from "./shared";
 import { io } from "socket.io-client";
+import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
+import { auth0Config } from "./auth0-config";
 
 const socket = io(SOCKETS_URL, {
   withCredentials: NODE_ENV === "production",
 });
 
 const App = () => {
+  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+    const {
+    isAuthenticated,
+    user: auth0User,
+    loginWithRedirect,
+    logout: auth0Logout,
+    isLoading: auth0Loading,
+  } = useAuth0();
 
   useEffect(() => {
     socket.on("connect", () => {
@@ -33,6 +43,9 @@ const App = () => {
     } catch {
       console.log("Not authenticated");
       setUser(null);
+      setIsAuth(false);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -40,6 +53,34 @@ const App = () => {
   useEffect(() => {
     checkAuth();
   }, []);
+
+  // Handle Auth0 authentication
+  useEffect(() => {
+    if (isAuthenticated && auth0User) {
+      handleAuth0Login();
+    }
+  }, [isAuthenticated, auth0User]);
+
+  const handleAuth0Login = async () => {
+    try {
+      const response = await axios.post(
+        `${API_URL}/auth/auth0`,
+        {
+          auth0Id: auth0User.sub,
+          firstName: auth0User.name.split(" ")[0],
+          lastName: auth0User.name.split(" ")[1],
+          email: auth0User.email,
+          username: auth0User.nickname || auth0User.email?.split("@")[0],
+        },
+        {
+          withCredentials: true,
+        }
+      );
+      setUser(response.data.user);
+    } catch (error) {
+      console.error("Auth0 login error:", error);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -52,17 +93,41 @@ const App = () => {
         }
       );
       setUser(null);
+      // Logout from Auth0
+      auth0Logout({
+        logoutParams: {
+          returnTo: window.location.origin,
+        },
+      });
     } catch (error) {
       console.error("Logout error:", error);
     }
   };
 
+  const handleAuth0LoginClick = () => {
+    loginWithRedirect();
+  };
+
+  // Show NavBar only when logged in (backend user OR Auth0)
+  const showNav = !!user || isAuthenticated;
+  
+  if (loading) {
+    return <div className="app">Loading...</div>;
+  }
+
   return (
     <div>
-      <NavBar user={user} onLogout={handleLogout} />
+      {showNav && (
+          <NavBar
+            user={user}
+            onLogout={handleLogout}
+            onAuth0Login={handleAuth0LoginClick}
+            isAuth0Authenticated={isAuthenticated}
+          />
+        )}
       <div className="app">
         <Routes>
-          <Route path="/login" element={<Login setUser={setUser} />} />
+          <Route path="/login" element={<Login setUser={setUser} onAuth0Login={handleAuth0LoginClick}  />} />
           <Route path="/signup" element={<Signup setUser={setUser} />} />
           <Route exact path="/" element={<Home />} />
           <Route path="*" element={<NotFound />} />
@@ -74,9 +139,11 @@ const App = () => {
 
 const Root = () => {
   return (
-    <Router>
-      <App />
-    </Router>
+    <Auth0Provider {...auth0Config}>
+      <Router>
+        <App />
+      </Router>
+    </Auth0Provider> 
   );
 };
 
