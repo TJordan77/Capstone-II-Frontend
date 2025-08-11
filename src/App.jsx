@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import axios from "axios";
+//import axios from "axios";
+import { api } from "./ApiClient";
 import "./AppStyles.css";
 import NavBar from "./components/NavBar";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import Home from "./components/Home";
+import CreateHunt from "./components/CreateHunt";
 import NotFound from "./components/NotFound";
 import { API_URL, SOCKETS_URL, NODE_ENV } from "./shared";
 import { io } from "socket.io-client";
@@ -36,14 +38,10 @@ const App = () => {
 
   const checkAuth = async () => {
     try {
-      const response = await axios.get(`${API_URL}/auth/me`, {
-        withCredentials: true,
-      });
-      setUser(response.data.user);
+      const { data } = await api.get("/auth/me");
+      setUser(data?.user || null);
     } catch {
-      console.log("Not authenticated");
       setUser(null);
-      setIsAuth(false);
     } finally {
       setLoading(false);
     }
@@ -130,6 +128,8 @@ const App = () => {
           <Route path="/login" element={<Login setUser={setUser} onAuth0Login={handleAuth0LoginClick}  />} />
           <Route path="/signup" element={<Signup setUser={setUser} />} />
           <Route exact path="/" element={<Home />} />
+          <Route path="/create" element={<CreateHunt />} />
+          <Route path="/create" element={(!!user || isAuthenticated) ? <CreateHunt /> : <Navigate to="/login" replace state={{ from: "/create" }} />}/>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
