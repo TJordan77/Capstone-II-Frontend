@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
+// import axios from "axios";
 import "./AuthStyles.css";
-import { API_URL } from "../shared";
+// import { API_URL } from "../shared";
+// CHANGED: use shared api client so baseURL '/api' is applied
+// /api is what tells the proxy to use backend instead of frontend
+import { api } from "../ApiClient";
 
 const Signup = ({ setUser, onAuth0Login }) => {
   const [formData, setFormData] = useState({
@@ -63,20 +66,17 @@ const Signup = ({ setUser, onAuth0Login }) => {
 
     setIsLoading(true);
     try {
-      const response = await axios.post(
-        `${API_URL}/auth/signup`,
-        {
-          username: formData.username,
-          email: formData.email,
-          password: formData.password,
-          confirmPassword: formData.confirmPassword,
-          firstName: formData.firstname,
-          lastName: formData.lastname,
-        },
-        { withCredentials: true }
-      );
+      // CHANGED: use shared api (withCredentials + baseURL '/api' already set)
+      const { data } = await api.post("/auth/signup", {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        // CHANGED: do not send confirmPassword to the API
+        firstName: formData.firstname,
+        lastName: formData.lastname,
+      });
 
-      setUser(response.data.user);
+      setUser(data.user);
       navigate("/");
     } catch (error) {
       if (error.response?.data?.error) {

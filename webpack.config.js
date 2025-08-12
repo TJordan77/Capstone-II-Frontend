@@ -16,18 +16,22 @@ module.exports = {
   plugins: [
     new webpack.EnvironmentPlugin({
       NODE_ENV: "development",
-      API_URL: "http://localhost:8080",
-      SOCKETS_URL: "ws://localhost:8080",
+      REACT_APP_API_URL: "",                 // CHANGED: leave empty in dev so we use same-origin "/api" via proxy
+      SOCKETS_URL: "http://localhost:8080",  // keep if need sockets; guarded in App.jsx (CHANGED to backend port/protocol)
       REACT_APP_AUTH0_DOMAIN: "",
       REACT_APP_AUTH0_CLIENT_ID: "",
       REACT_APP_AUTH0_AUDIENCE: "",
+      // CHANGED: must be a string
+      REACT_APP_GOOGLE_CLIENT_ID: "56346908203-utbffuivjnt9mjhhiv64qsmcg45djmd3.apps.googleusercontent.com",
     }),
     // Generate dist/index.html that loads main.js
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, "public/index.html"),
       inject: "body",
     }),
-    new CopyWebpackPlugin({ patterns: [{ from: "public", to: ".", globOptions: { ignore: ["**/index.html"] } }] }),
+    new CopyWebpackPlugin({
+      patterns: [{ from: "public", to: ".", globOptions: { ignore: ["**/index.html"] } }],
+    }),
   ],
   module: {
     rules: [
@@ -58,5 +62,15 @@ module.exports = {
     compress: true,
     historyApiFallback: true,
     port: 3000,
+    // ADDED: proxy API to backend so cookies/CSRF work on same-origin during dev
+    proxy: [
+      {
+        context: ["/api"],
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        // ws: true, // enable if we turn on Socket.IO on the backend during dev
+      },
+    ],
+    allowedHosts: "all", // ADDED: avoids host check issues when testing
   },
 };
