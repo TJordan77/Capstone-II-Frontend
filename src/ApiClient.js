@@ -3,13 +3,6 @@
 // Easier to just import this file
 import axios from "axios";
 
-const env =
-  (typeof process !== "undefined" && process && process.env) ? process.env : {};
-
-const fromEnv = env.REACT_APP_API_URL;
-const fromWindow =
-  typeof window !== "undefined" ? window.REACT_APP_API_URL : undefined;
-
 // CHANGED: read compile-time envs directly so webpack/Vercel can replace them
 const fromEnv = process.env.REACT_APP_API_URL || "";    
 const fromWindow =
