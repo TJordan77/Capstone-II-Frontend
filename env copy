@@ -1,0 +1,5 @@
+DATABASE_URL=postgres://postgres:admin@localhost:5432/sidequest_dev
+DB_SSL=false
+JWT_SECRET=81ac3108a517920b0328f85d1865a04cadf4f3538651f95b2506496aea9fca82
+GOOGLE_CLIENT_ID=56346908203-utbffuivjnt9mjhhiv64qsmcg45djmd3.apps.googleusercontent.com
+FRONTEND_URL=http://localhost:3000
