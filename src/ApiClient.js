@@ -20,10 +20,7 @@ const baseURL = origin ? `${origin}/api` : "/api";
 export const api = axios.create({
   baseURL,                 // CRA dev can use proxy if no baseURL is set
   withCredentials: true,   // Send cookies with every request
-});
-
-// ADDED: Just a helpful header that some CSRF middlewares look for
-api.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";  
+}); 
 
 // CSRF support here
 // We fetch a CSRF token once from the backend and attach it on mutating requests.
