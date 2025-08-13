@@ -1,12 +1,17 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
-import { API_URL } from "../shared";
+import axios from "axios"; // (unused after change—ok to remove later)
+import { API_URL } from "../shared"; // (unused after change—ok to remove later)
 import "./AuthStyles.css";
+// CHANGED: use shared api client so baseURL '/api' is applied
+import { api } from "../ApiClient";
+// ADDED: Google login button component (App is already wrapped in GoogleOAuthProvider)
+import { GoogleLogin } from "@react-oauth/google";
 
 const Login = ({ setUser, onAuth0Login}) => {
   const [formData, setFormData] = useState({
-    username: "",
+    // CHANGED: use email instead of username (the UI collects email)
+    email: "",     
     password: "",
   });
   const [errors, setErrors] = useState({});
@@ -16,10 +21,9 @@ const Login = ({ setUser, onAuth0Login}) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.username) {
-      newErrors.username = "Username is required";
-    } else if (formData.username.length < 3 || formData.username.length > 20) {
-      newErrors.username = "Username must be between 3 and 20 characters";
+    // CHANGED: validate email instead of username
+    if (!formData.email) {
+      newErrors.email = "Email is required";
     }
 
     if (!formData.password) {
@@ -41,11 +45,14 @@ const Login = ({ setUser, onAuth0Login}) => {
 
     setIsLoading(true);
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, formData, {
-        withCredentials: true,
+      // CHANGED: send through shared api (adds /api, credentials, CSRF header)
+      // Test: if backend supports identifier OR email, use identifier; otherwise switch "identifier" to "email"
+      const { data } = await api.post("/auth/login", {
+        identifier: formData.email, // CHANGED (use "email" if identifier support was removed server-side)
+        password: formData.password,
       });
 
-      setUser(response.data.user);
+      setUser(data.user);
       navigate("/");
     } catch (error) {
       if (error.response?.data?.error) {
@@ -129,13 +136,22 @@ const Login = ({ setUser, onAuth0Login}) => {
           Auth
         </button>
         
-        {/* <button
-        type="button"
-        onClick={onAuth0Login}
-        className="auth0-google-btn"
-        >
-          Login with Google
-        </button> */}
+        <GoogleLogin
+          onSuccess={async (credResponse) => {
+            try {
+              const id_token = credResponse.credential; // Google ID token
+              // CHANGED: use shared api so credentials/CSRF are handled
+              const { data } = await api.post("/auth/google", { id_token }); 
+              setUser?.(data.user);
+              navigate("/");
+            } catch (err) {
+              console.error("Google login failed", err);
+            }
+          }}
+          onError={() => {
+            console.error("Google Login error");
+          }}
+        />
 
         <p className="auth-link">
           Don't have an account? <Link to="/signup">Sign up</Link>

@@ -89,6 +89,7 @@
   margin: 0 auto;
   padding: 0 2rem;
   gap: 2rem;
+  margin-top: 3rem;
 }
 
 .home-hero-text {
@@ -198,59 +199,60 @@
    ========================= */
 @media (max-width: 900px) {
   .home-hero {
-    height: auto;                 /* ⬅️ let the section grow when stacked */
-    flex-direction: column;       /* ⬅️ image drops under text like desktop layout intent */
-    text-align: center;           /* ⬅️ center the headline on mobile */
-    padding: 1rem;                /* ⬅️ tighter side padding on phones */
-    gap: 1.25rem;                 /* ⬅️ less dead space between blocks */
+    height: auto;                 /* let the section grow when stacked */
+    flex-direction: column;       /* image drops under text like desktop layout intent */
+    text-align: center;           /* center the headline on mobile */
+    padding: 1rem;                /* tighter side padding on phones */
+    gap: 1.25rem;                 /* less dead space between blocks */
+    margin-top: 3rem;
   }
 
   .home-hero-text {
-    align-items: center;          /* ⬅️ center CTA + copy */
+    align-items: center;          /* center CTA + copy */
   }
 
   .home-hero-text h1 {
-    font-size: 2.2rem;            /* ⬅️ scale headline down slightly for small viewports */
-    max-width: 20ch;              /* ⬅️ similar line length to desktop */
+    font-size: 2.2rem;            /* scale headline down slightly for small viewports */
+    max-width: 20ch;              /* similar line length to desktop */
   }
 
   .cta-buttons {
-    max-width: 520px;             /* ⬅️ make CTAs wider to match desktop feel */
+    max-width: 520px;             /* make CTAs wider to match desktop feel */
   }
 
   .btn-green,
   .btn-yellow {
-    height: 56px;                 /* ⬅️ thicker buttons like desktop */
-    line-height: 56px;            /* ⬅️ vertically center text */
-    font-size: 1.125rem;          /* ⬅️ slightly larger CTA label */
-    padding: 0 1rem;              /* ⬅️ thickness handled by height */
+    height: 56px;                 /* thicker buttons like desktop */
+    line-height: 56px;            /* vertically center text */
+    font-size: 1.125rem;          /* slightly larger CTA label */
+    padding: 0 1rem;              /* thickness handled by height */
   }
 
   .home-hero-image img {
-    width: min(520px, 92vw);      /* ⬅️ predictable hero art size on phones */
-    max-height: none;             /* ⬅️ don’t constrain height after stacking */
+    width: min(520px, 92vw);      /* predictable hero art size on phones */
+    max-height: none;             /* don’t constrain height after stacking */
   }
 
   /* Header trims so it doesn’t dominate on mobile */
-  .home-navbar { padding: .75rem 1rem; }          /* ⬅️ reduce chrome height */
-  .home-logo { height: 44px; }                     /* ⬅️ smaller logo on mobile */
-  .brand-name { font-size: 1.5rem; }               /* ⬅️ right-sized wordmark */
-  .home-nav-buttons { gap: .5rem; }                /* ⬅️ tighter button spacing */
+  .home-navbar { padding: .75rem 1rem; }          /* reduce chrome height */
+  .home-logo { height: 44px; }                     /* smaller logo on mobile */
+  .brand-name { font-size: 1.5rem; }               /* right-sized wordmark */
+  .home-nav-buttons { gap: .5rem; }                /* tighter button spacing */
   .home-nav-btn {
-    font-size: 1rem;                               /* ⬅️ avoid jumbo tiles */
-    padding: .5rem .9rem;                          /* ⬅️ compact touch targets */
+    font-size: 1rem;                               /* avoid jumbo tiles */
+    padding: .5rem .9rem;                          /* compact touch targets */
     border-radius: 10px;
-    background: rgba(0,0,0,.35);                   /* ⬅️ maintains contrast without huge tiles */
+    background: rgba(0,0,0,.35);                   /* maintains contrast without huge tiles */
   }
 
   /* Feature section stacks cleanly and breathes on mobile */
   .features {
-    padding: 2rem 1rem;            /* ⬅️ reduce top/bottom whitespace */
+    padding: 2rem 1rem;            /* reduce top/bottom whitespace */
     gap: 1rem;
   }
   .feature-card {
-    width: 100%;                   /* ⬅️ single column cards */
-    padding: 1.5rem 1.25rem;       /* ⬅️ tighter card padding on phones */
+    width: 100%;                   /* single column cards */
+    padding: 1.5rem 1.25rem;       /* tighter card padding on phones */
   }
 }
 
@@ -280,6 +282,6 @@
 
 /* Keep your original tiny-phone rules but expand them slightly */
 @media (max-width: 600px) {
-  .home-hero-text h1 { font-size: 2rem; }          /* ⬅️ still okay for very small phones */
-  .feature-card { width: 100%; }                    /* ⬅️ full width on narrowest devices */
+  .home-hero-text h1 { font-size: 2rem; }          /* still okay for very small phones */
+  .feature-card { width: 100%; }                    /* full width on narrowest devices */
 }

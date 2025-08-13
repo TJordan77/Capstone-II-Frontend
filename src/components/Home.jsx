@@ -2,7 +2,7 @@ import React from "react";
 import "./Home.css";
 import { Link } from "react-router-dom";
 
-export default function Home() {
+export default function Home({ isLoggedIn }) {
   return (
     <div className="home-page">
       <div
@@ -12,16 +12,22 @@ export default function Home() {
       />
 
       <div className="home-container">
-        <div className="home-navbar">
-          <div className="brand">
-            <img src="/whitelogo2.png" alt="SideQuest Logo" className="home-logo" />
-            <span className="brand-name">SIDEQUEST</span>
+        {!isLoggedIn && (
+          <div className="home-navbar">
+            <div className="brand">
+              {/* was className="logo" */}
+              <img src="/whitelogo2.png" alt="SideQuest Logo" className="home-logo" />
+              <span className="brand-name">SIDEQUEST</span>
+            </div>
+
+            {/* was className="nav-buttons" */}
+            <div className="home-nav-buttons">
+              {/* was className="nav-btn" */}
+              <Link to="/login" className="home-nav-btn">Log in</Link>
+              <Link to="/signup" className="home-nav-btn">Sign Up</Link>
+            </div>
           </div>
-          <div className="home-nav-buttons">
-            <Link to="/login" className="home-nav-btn">Log in</Link>
-            <Link to="/signup" className="home-nav-btn">Sign Up</Link>
-          </div>
-        </div>
+        )}
 
         <div className="home-hero">
           <div className="home-hero-text">

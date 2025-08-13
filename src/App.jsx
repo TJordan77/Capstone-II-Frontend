@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react"; // CHANGED: add useRef
 import { createRoot } from "react-dom/client";
-//import axios from "axios";
-import { api } from "./ApiClient";
+// import axios from "axios"; // keep using the shared api client
+import { api, initCsrf } from "./ApiClient";
 import "./AppStyles.css";
 import NavBar from "./components/NavBar";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
@@ -15,25 +15,40 @@ import { io } from "socket.io-client";
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 import { auth0Config } from "./auth0-config";
 
-const socket = io(SOCKETS_URL, {
-  withCredentials: NODE_ENV === "production",
-});
+import { GoogleOAuthProvider } from "@react-oauth/google";
+const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+
+// CHANGED: only create socket in development to avoid connecting in prod where server is disabled
+// Disable sockets entirely until the backend socket server is enabled
+const ENABLE_SOCKETS = false; // ADDED: flip to true when backend is ready
+const socket = ENABLE_SOCKETS
+  ? io(SOCKETS_URL, {
+      withCredentials: false, // CHANGED: not needed in dev for local sockets
+    })
+  : null;
 
 const App = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
-    const {
+  const {
     isAuthenticated,
     user: auth0User,
     loginWithRedirect,
     logout: auth0Logout,
     isLoading: auth0Loading,
+    getIdTokenClaims,              // ADDED: will fetch Auth0 id_token for backend verification
   } = useAuth0();
 
+  const postedAuth0Ref = useRef(false); // ADDED: prevent duplicate backend posts
+
   useEffect(() => {
+    if (!socket) return;           // ADDED: guard when sockets are disabled in prod
     socket.on("connect", () => {
       console.log("🔗 Connected to socket");
     });
+    return () => {
+      socket.off("connect");       // ADDED: cleanup
+    };
   }, []);
 
   const checkAuth = async () => {
@@ -49,32 +64,30 @@ const App = () => {
 
   // Check authentication status on app load
   useEffect(() => {
-    checkAuth();
+    (async () => {
+      await initCsrf();     // get CSRF token first
+      await checkAuth();    // then check session
+    })();
   }, []);
 
   // Handle Auth0 authentication
   useEffect(() => {
-    if (isAuthenticated && auth0User) {
+    if (isAuthenticated && auth0User && !postedAuth0Ref.current) { // ADDED: guard to avoid double-post
+      postedAuth0Ref.current = true;                               
       handleAuth0Login();
     }
   }, [isAuthenticated, auth0User]);
 
   const handleAuth0Login = async () => {
     try {
-      const response = await axios.post(
-        `${API_URL}/auth/auth0`,
-        {
-          auth0Id: auth0User.sub,
-          firstName: auth0User.name.split(" ")[0],
-          lastName: auth0User.name.split(" ")[1],
-          email: auth0User.email,
-          username: auth0User.nickname || auth0User.email?.split("@")[0],
-        },
-        {
-          withCredentials: true,
-        }
-      );
-      setUser(response.data.user);
+      // CHANGED: send a verified id_token to backend instead of raw profile fields
+      const claims = await getIdTokenClaims();         
+      const id_token = claims?.__raw;                   // (Auth0 SDK exposes the raw JWT here)
+      if (!id_token) throw new Error("No Auth0 id_token available"); 
+
+      // CHANGED: use shared api client so withCredentials and baseURL are consistent
+      const { data } = await api.post("/auth/auth0", { id_token });  
+      setUser(data.user);
     } catch (error) {
       console.error("Auth0 login error:", error);
     }
@@ -82,14 +95,8 @@ const App = () => {
 
   const handleLogout = async () => {
     try {
-      // Logout from our backend
-      await axios.post(
-        `${API_URL}/auth/logout`,
-        {},
-        {
-          withCredentials: true,
-        }
-      );
+      // CHANGED: use shared api client
+      await api.post("/auth/logout", {});
       setUser(null);
       // Logout from Auth0
       auth0Logout({
@@ -108,7 +115,7 @@ const App = () => {
 
   // Show NavBar only when logged in (backend user OR Auth0)
   const showNav = !!user || isAuthenticated;
-  
+
   if (loading) {
     return <div className="app">Loading...</div>;
   }
@@ -116,20 +123,22 @@ const App = () => {
   return (
     <div>
       {showNav && (
-          <NavBar
-            user={user}
-            onLogout={handleLogout}
-            onAuth0Login={handleAuth0LoginClick}
-            isAuth0Authenticated={isAuthenticated}
-          />
-        )}
+        <NavBar
+          user={user}
+          onLogout={handleLogout}
+          onAuth0Login={handleAuth0LoginClick}
+          isAuth0Authenticated={isAuthenticated}
+        />
+      )}
       <div className="app">
         <Routes>
-          <Route path="/login" element={<Login setUser={setUser} onAuth0Login={handleAuth0LoginClick}  />} />
+          <Route path="/login" element={<Login setUser={setUser} onAuth0Login={handleAuth0LoginClick} />} />
           <Route path="/signup" element={<Signup setUser={setUser} />} />
-          <Route exact path="/" element={<Home />} />
-          <Route path="/create" element={<CreateHunt />} />
-          <Route path="/create" element={(!!user || isAuthenticated) ? <CreateHunt /> : <Navigate to="/login" replace state={{ from: "/create" }} />}/>
+          <Route exact path="/" element={<Home isLoggedIn={showNav} />} />
+          <Route
+            path="/create"
+            element={(!!user || isAuthenticated) ? <CreateHunt /> : <Navigate to="/login" replace state={{ from: "/create" }} />}
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
@@ -139,11 +148,14 @@ const App = () => {
 
 const Root = () => {
   return (
-    <Auth0Provider {...auth0Config}>
-      <Router>
-        <App />
-      </Router>
-    </Auth0Provider> 
+    // CHANGED: wrapped the app with GoogleOAuthProvider so GoogleLogin can issue id_tokens
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <Auth0Provider {...auth0Config}>
+        <Router>
+          <App />
+        </Router>
+      </Auth0Provider>
+    </GoogleOAuthProvider>
   );
 };
 
