@@ -134,7 +134,7 @@ const App = () => {
         <Routes>
           <Route path="/login" element={<Login setUser={setUser} onAuth0Login={handleAuth0LoginClick} />} />
           <Route path="/signup" element={<Signup setUser={setUser} />} />
-          <Route exact path="/" element={<Home />} />
+          <Route exact path="/" element={<Home isLoggedIn={showNav} />} />
           <Route
             path="/create"
             element={(!!user || isAuthenticated) ? <CreateHunt /> : <Navigate to="/login" replace state={{ from: "/create" }} />}
