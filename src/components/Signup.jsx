@@ -6,6 +6,7 @@ import { API_URL } from "../shared";
 
 const Signup = ({ setUser, onAuth0Login }) => {
   const [formData, setFormData] = useState({
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -18,6 +19,12 @@ const Signup = ({ setUser, onAuth0Login }) => {
 
   const validateForm = () => {
     const newErrors = {};
+
+    if (!formData.username) {
+      newErrors.username = "Username is required";
+    } else if (formData.username.length < 3 || formData.username.length > 20) {
+      newErrors.username = "Username must be 3–20 characters";
+    }
     
     if (!formData.firstname) {
       newErrors.firstname = "First name is required";
@@ -59,11 +66,12 @@ const Signup = ({ setUser, onAuth0Login }) => {
       const response = await axios.post(
         `${API_URL}/auth/signup`,
         {
+          username: formData.username,
           email: formData.email,
           password: formData.password,
           confirmPassword: formData.confirmPassword,
-          firstname: formData.firstname,
-          lastname: formData.lastname,
+          firstName: formData.firstname,
+          lastName: formData.lastname,
         },
         { withCredentials: true }
       );
@@ -110,7 +118,7 @@ const Signup = ({ setUser, onAuth0Login }) => {
           <div className="form-group">
             <label htmlFor="firstname">First Name:</label>
             <input
-              type="firstname"
+              type="text"
               id="firstname"
               name="firstname"
               value={formData.firstname}
@@ -134,6 +142,21 @@ const Signup = ({ setUser, onAuth0Login }) => {
             />
             {errors.lastname && (
               <span className="error-text">{errors.lastname}</span>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="username">Username:</label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              className={errors.username ? "error" : ""}
+            />
+            {errors.username && (
+              <span className="error-text">{errors.username}</span>
             )}
           </div>
 

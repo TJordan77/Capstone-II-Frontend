@@ -5,6 +5,10 @@
   font-family: "Raleway", sans-serif;
 }
 
+a {
+  text-decoration: none;
+}
+
 body {
   background-color: #fff;
 }
