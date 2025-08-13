@@ -10,6 +10,11 @@ const fromEnv = env.REACT_APP_API_URL;
 const fromWindow =
   typeof window !== "undefined" ? window.REACT_APP_API_URL : undefined;
 
+// CHANGED: read compile-time envs directly so webpack/Vercel can replace them
+const fromEnv = process.env.REACT_APP_API_URL || "";    
+const fromWindow =
+  typeof window !== "undefined" ? window.REACT_APP_API_URL : undefined;
+
 // Remove any trailing slash
 const _raw = ((fromEnv || fromWindow) || "").replace(/\/$/, "");     
 // ADDED: If someone sets REACT_APP_API_URL to ".../api", strip it to avoid "/api/api"
