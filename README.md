@@ -112,7 +112,7 @@ REACT_APP_FRONTEND_URL=http://localhost:3000
 npm install
 
 # 2) Start the dev server
-npm start
+npm run start-dev
 
 # 3) Build for production
 npm run build
@@ -239,5 +239,6 @@ These are typical endpoints the frontend calls (adjust to match your backend):
 ---
 
 ## 📄 License
+
 
 MIT
