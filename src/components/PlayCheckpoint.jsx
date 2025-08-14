@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { api, ensureCsrf } from "../ApiClient"; // uses the same axios instance + CSRF bootstrap
+import { api, initCsrf } from "../ApiClient"; // uses the same axios instance + CSRF bootstrap
 
 export default function PlayCheckpoint() {
   const { huntId, checkpointId } = useParams(); // e.x., /play/:huntId/checkpoints/:checkpointId
@@ -63,7 +63,7 @@ export default function PlayCheckpoint() {
 
     try {
       setSubmitting(true);
-      await ensureCsrf(); // fetch CSRF token if not already set
+      await initCsrf(); // fetch CSRF token if not already set
       const { data } = await api.post(`/play/checkpoints/${checkpointId}/attempt`, {
         userHuntId,
         answer: answer.trim(),
