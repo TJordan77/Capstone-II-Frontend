@@ -140,6 +140,7 @@ const App = () => {
             path="/create"
             element={(!!user || isAuthenticated) ? <CreateHunt /> : <Navigate to="/login" replace state={{ from: "/create" }} />}
           />
+          <Route path="/hunts/:huntId/" element={<HuntPage />} />
           <Route path="/play/:huntId/checkpoints/:checkpointId" element={<PlayCheckpoint />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
