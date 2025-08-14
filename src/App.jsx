@@ -9,7 +9,7 @@ import Login from "./components/Login";
 import Signup from "./components/Signup";
 import Home from "./components/Home";
 import CreateHunt from "./components/CreateHunt";
-import PlayCheckpoint from "./pages/PlayCheckpoint";
+import PlayCheckpoint from "./components/PlayCheckpoint";
 import NotFound from "./components/NotFound";
 import { API_URL, SOCKETS_URL, NODE_ENV } from "./shared";
 import { io } from "socket.io-client";
