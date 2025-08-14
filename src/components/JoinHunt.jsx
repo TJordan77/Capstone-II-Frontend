@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 // Optional: npm install react-qr-reader if for QR scan support
 // import { QrReader } from "react-qr-reader";
-import "./JoinHunt.css";
+//import "./JoinHunt.css";
 
 export default function JoinHunt() {
   const [joinCode, setJoinCode] = useState("");
