@@ -5,7 +5,7 @@ import "./CreateHunt.css";
 /* ==== Leaflet (interactive map) ==== */
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 
-import { api, ensureCsrf } from "../ApiClient";
+import { api, initCsrf } from "../ApiClient";
 
 const DEFAULT_CENTER = [40.7128, -74.006]; // NYC-ish
 
@@ -198,7 +198,7 @@ export default function CreateHunt() {
 
     try {
       setSubmitting(true);
-      await ensureCsrf(); // fetch CSRF token once
+      await initCsrf(); // fetch CSRF token once
       const { data } = await api.post("/hunts", payload);
       const id = data?.id || data?.hunt?.id;
       navigate(id ? `/hunts/${id}` : "/"); 
