@@ -9,6 +9,7 @@ import Login from "./components/Login";
 import Signup from "./components/Signup";
 import Home from "./components/Home";
 import CreateHunt from "./components/CreateHunt";
+import PlayCheckpoint from "./pages/PlayCheckpoint";
 import NotFound from "./components/NotFound";
 import { API_URL, SOCKETS_URL, NODE_ENV } from "./shared";
 import { io } from "socket.io-client";
@@ -139,6 +140,7 @@ const App = () => {
             path="/create"
             element={(!!user || isAuthenticated) ? <CreateHunt /> : <Navigate to="/login" replace state={{ from: "/create" }} />}
           />
+          <Route path="/play/:huntId/checkpoints/:checkpointId" element={<PlayCheckpoint />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
