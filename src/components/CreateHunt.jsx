@@ -1,9 +1,11 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./CreateHunt.css";
 
 /* ==== Leaflet (interactive map) ==== */
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+
+import { api, ensureCsrf } from "../ApiClient";
 
 const DEFAULT_CENTER = [40.7128, -74.006]; // NYC-ish
 
@@ -97,6 +99,20 @@ export default function CreateHunt() {
 
   const [checkpoints, setCheckpoints] = useState([emptyCp()]);
 
+  // ADDED Hunt-level state so we can post these values
+  const [hunt, setHunt] = useState({
+    title: "",
+    description: "",
+    endsAt: "",
+    maxPlayers: "",
+    visibility: "public",
+    coverUrl: "",
+  });  
+
+  const setField = (k) => (e) => setHunt((h) => ({ ...h, [k]: e.target.value })); // [ADDED]
+  const [submitting, setSubmitting] = useState(false); // [ADDED]
+  const navigate = useNavigate();
+
   // modal control per checkpoint
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [modalIndex, setModalIndex] = useState(0);
@@ -139,6 +155,62 @@ export default function CreateHunt() {
     closeMap();
   };
 
+  // ADDED very small validator (kept minimal to avoid breakages)
+  function validate(h, cps) {
+    if (!h.title.trim()) return "Hunt name is required";
+    if (!Array.isArray(cps) || cps.length === 0) return "Add at least one checkpoint";
+    for (const cp of cps) {
+      if (!cp.title.trim() || !cp.riddle.trim() || !cp.answer.trim()) {
+        return "Each checkpoint needs a title, riddle, and answer";
+      }
+      if (!cp.lat || !cp.lng) return "Each checkpoint needs coordinates";
+    }
+    return null;
+  }
+
+  // ADDED in submit handler: posts to /api/hunts, then navigates
+  async function handleSubmit(e) {
+    e.preventDefault();
+
+    const err = validate(hunt, checkpoints);
+    if (err) {
+      alert(err);
+      return;
+    }
+
+    const payload = {
+      title: hunt.title.trim(),
+      description: hunt.description.trim(),
+      endsAt: hunt.endsAt ? new Date(hunt.endsAt).toISOString() : null,
+      maxPlayers: hunt.maxPlayers ? Number(hunt.maxPlayers) : null,
+      visibility: hunt.visibility,
+      coverUrl: hunt.coverUrl || null,
+      checkpoints: checkpoints.map((cp, idx) => ({
+        order: idx + 1,
+        title: cp.title.trim(),
+        riddle: cp.riddle.trim(),
+        answer: cp.answer.trim(),
+        lat: Number(cp.lat),
+        lng: Number(cp.lng),
+        tolerance: Number(cp.tolerance || 25),
+      })),
+    };
+
+    try {
+      setSubmitting(true);
+      await ensureCsrf(); // fetch CSRF token once
+      const { data } = await api.post("/hunts", payload);
+      const id = data?.id || data?.hunt?.id;
+      navigate(id ? `/hunts/${id}` : "/"); 
+    } catch (e2) {
+      console.error(e2);
+      alert(e2?.response?.data?.error || "Failed to create hunt"); // minimal UX
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+
   // initial center for modal taken from the checkpoint currently being edited
   const current = checkpoints[modalIndex] ?? emptyCp();
   const initialForMap =
@@ -162,35 +234,57 @@ export default function CreateHunt() {
       <main className="create-card" role="main">
         <h2 className="create-title">Create a Hunt</h2>
 
-        <form className="create-form" onSubmit={(e) => e.preventDefault()}>
+        <form className="create-form" onSubmit={handleSubmit}>
           {/* ===== Hunt Info ===== */}
           <div className="field span-2">
             <label>
               Hunt Name <span className="req">*</span>
             </label>
-            <input placeholder="e.g. Downtown Dash" />
+            <input
+              placeholder="e.g. Downtown Dash"
+              value={hunt.title} 
+              onChange={setField("title")} 
+            />
           </div>
 
           <div className="field">
             <label>Description</label>
-            <textarea rows={3} placeholder="What should players expect?" />
+            <textarea
+              rows={3}
+              placeholder="What should players expect?"
+              value={hunt.description}  
+              onChange={setField("description")}
+            />
           </div>
 
           <div className="field">
             <label>
               Ends At <span className="req">*</span>
             </label>
-            <input placeholder="MM / DD" />
+            <input
+              type="datetime-local"           
+              value={hunt.endsAt}              
+              onChange={setField("endsAt")}   
+              placeholder="MM / DD"
+            />
           </div>
 
           <div className="field">
             <label>Max Players</label>
-            <input placeholder="Optional" />
+            <input
+              inputMode="numeric"             
+              placeholder="Optional"
+              value={hunt.maxPlayers}           
+              onChange={setField("maxPlayers")}
+            />
           </div>
 
           <div className="field">
             <label>Visibility</label>
-            <select defaultValue="public">
+            <select
+              value={hunt.visibility}         
+              onChange={setField("visibility")} 
+            >
               <option value="public">Public (anyone can join)</option>
               <option value="private">Private (invite only)</option>
               <option value="unlisted">Unlisted (link only)</option>
@@ -199,7 +293,11 @@ export default function CreateHunt() {
 
           <div className="field">
             <label>Cover Image URL</label>
-            <input placeholder="/images/cover.jpg" />
+            <input
+              placeholder="/images/cover.jpg"
+              value={hunt.coverUrl}            
+              onChange={setField("coverUrl")} 
+            />
           </div>
 
           {/* ===== Checkpoint Header + Add ===== */}
@@ -359,7 +457,7 @@ export default function CreateHunt() {
             <div className="left" />
             <div className="right">
               <Link to="/" className="btn ghost-lg">Cancel</Link>
-              <button type="submit" className="btn cta">Create Hunt</button>
+              <button type="submit" className="btn cta" disabled={submitting}>{submitting ? "Creating…" : "Create Hunt"}</button>
             </div>
           </div>
         </form>
