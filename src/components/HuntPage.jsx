@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { api, ensureCsrf } from "../ApiClient";
+import { api, initCsrf } from "../ApiClient";
 
 export default function HuntPage() {
   const { id } = useParams();
