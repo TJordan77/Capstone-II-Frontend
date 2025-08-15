@@ -4,21 +4,30 @@
   align-items: center;
   min-height: 60vh;
   padding: 20px;
+  position: relative;
+  z-index: 1; 
+}
+.login-bg {
+  position: fixed;
+  inset: 0;
+  background: no-repeat center / cover;
+  z-index: 0;
 }
 
 .auth-form {
-  background: white;
+  background: #019192;
   padding: 2rem;
-  border-radius: 8px;
+  border-radius: 25px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 400px;
+  padding: 2.5rem;
 }
 
 .auth-form h2 {
   text-align: center;
   margin-bottom: 1.5rem;
-  color: #333;
+  color: #f8fddf;
 }
 
 .form-group {
@@ -29,30 +38,30 @@
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #555;
+  color: #f1fad6;
 }
 
 .form-group input {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid #007878;
   border-radius: 4px;
   font-size: 1rem;
   transition: border-color 0.2s;
+  background-color: #007878;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  border-color: #009e9e;
+  box-shadow: 0 0 0 2px rgba(0, 96, 65, 0.25);
+  color: #f1fad6;
+
 }
 
-.form-group input.error {
-  border-color: #dc3545;
-}
 
 .error-text {
-  color: #dc3545;
+  color: #e60000;
   font-size: 0.875rem;
   margin-top: 0.25rem;
   display: block;
@@ -70,8 +79,8 @@
 .auth-form button {
   width: 100%;
   padding: 0.75rem;
-  background-color: #007bff;
-  color: white;
+  background-color: #fcd703;
+  color: #01554b;
   border: none;
   border-radius: 4px;
   font-size: 1rem;
@@ -81,7 +90,7 @@
 }
 
 .auth-form button:hover:not(:disabled) {
-  background-color: #0056b3;
+  background-color: #f6e573;
 }
 
 .auth-form button:disabled {
@@ -90,26 +99,24 @@
 }
 
 .auth-divider {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin: 1.5rem 0;
-  position: relative;
 }
 
-.auth-divider::before {
+.auth-divider::before,
+.auth-divider::after {
   content: "";
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 1px;
+  flex: 1; 
+  height: 3px;
   background-color: #ddd;
 }
 
 .auth-divider span {
-  background-color: white;
-  padding: 0 1rem;
   color: #666;
-  font-size: 0.875rem;
+  font-size: 1rem;
+  padding: 0 0.5rem;
 }
 
 .auth0-login-btn {
@@ -133,11 +140,11 @@
 .auth-link {
   text-align: center;
   margin-top: 1rem;
-  color: #666;
+  color: #ffffff;
 }
 
 .auth-link a {
-  color: #007bff;
+  color: #f9e003;
   text-decoration: none;
 }
 

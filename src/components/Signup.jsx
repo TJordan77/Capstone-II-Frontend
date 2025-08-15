@@ -106,6 +106,12 @@ const Signup = ({ setUser, onAuth0Login }) => {
   };
 
   return (
+    <div className ="signup-pg">
+      <div
+        className="login-bg"
+        style={{ backgroundImage: 'url("/background.png")' }}
+        aria-hidden="true"
+      />
     <div className="auth-container">
       <div className="auth-form">
         <h2>Sign Up</h2>
@@ -213,6 +219,7 @@ const Signup = ({ setUser, onAuth0Login }) => {
           Already have an account? <Link to="/login">Login</Link>
         </p>
       </div>
+    </div>
     </div>
   );
 };
