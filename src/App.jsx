@@ -11,6 +11,7 @@ import Home from "./components/Home";
 import CreateHunt from "./components/CreateHunt";
 import PlayCheckpoint from "./components/PlayCheckpoint";
 import HuntPage from "./components/HuntPage";
+import Leaderboard from "./components/Leaderboard";
 
 import NotFound from "./components/NotFound";
 import { API_URL, SOCKETS_URL, NODE_ENV } from "./shared";
@@ -144,6 +145,7 @@ const App = () => {
           />
           <Route path="/hunts/:id/" element={<HuntPage />} />
           <Route path="/play/:huntId/checkpoints/:checkpointId" element={<PlayCheckpoint />} />
+          <Route path="/leaderboard/:huntId" element={<Leaderboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
