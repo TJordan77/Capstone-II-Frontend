@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { api, ensureCsrf } from '../ApiClient';
+import { api, initCsrf } from '../ApiClient';
 import './HuntPage.css';
 
 export default function HuntPage() {
@@ -17,14 +17,15 @@ export default function HuntPage() {
       setLoading(true);
       setErr('');
       try {
-        await ensureCsrf();
+        try { await initCsrf(); } catch {}
         const res = await api.get(`/hunts/${id}`, { signal: controller.signal });
         if (!alive) return;
         setHunt(res.data);
       } catch (e) {
         if (!alive) return;
         if (e.name === 'CanceledError' || e.name === 'AbortError') return;
-        const msg = e?.response?.data?.error || (e?.response?.status ? `Error ${e.response.status}` : 'Failed to load hunt');
+        const msg = e?.response?.data?.error ||
+          (e?.response?.status ? `Error ${e.response.status}` : 'Failed to load hunt');
         setErr(msg);
       } finally {
         if (alive) setLoading(false);
@@ -34,25 +35,25 @@ export default function HuntPage() {
     return () => { alive = false; controller.abort(); };
   }, [id]);
 
-  if (loading) return <div className="hunt-page loading">Loading hunt…</div>;
+  if (loading) return <div className="page hunt-page loading">Loading hunt…</div>;
 
   if (err) {
     return (
-      <div className="hunt-page error">
+      <div className="page hunt-page error">
         <p>{err}</p>
         <Link className="btn ghost" to="/">Back home</Link>
       </div>
     );
   }
 
-  if (!hunt) return <div className="hunt-page error">Not found</div>;
+  if (!hunt) return <div className="page hunt-page error">Not found</div>;
 
   const checkpoints = (hunt.checkpoints || [])
     .slice()
     .sort((a, b) => (a.order ?? a.sortOrder ?? 0) - (b.order ?? b.sortOrder ?? 0));
 
   return (
-    <div className="hunt-page">
+    <div className="page hunt-page">
       <div className="hunt-card">
         <header className="hunt-header">
           <div className="hunt-title">{hunt.title}</div>
@@ -75,7 +76,7 @@ export default function HuntPage() {
         </ol>
 
         <div className="cta-row">
-          <Link className="btn primary" to={`/play?hunt=${hunt.id}`}>Start Hunt</Link>
+          <Link className="btn primary" to={`/play?hunt=${hunt.id}`}>Start hunt</Link>
           <Link className="btn ghost" to="/">Back</Link>
         </div>
       </div>
