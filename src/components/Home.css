@@ -69,12 +69,12 @@
 .home-nav-btn {
   color: white;
   background: rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
   transition: background 0.3s;
   padding: 1rem 1.8rem;
   font-size: 2rem;
   text-decoration: none;
 }
+
 .home-nav-btn:hover {
   background: rgba(0, 0, 0, 0.6);
 }
@@ -180,8 +180,8 @@
 }
 
 .feature-card img {
-  width: 70px;
   margin-bottom: 1.25rem;
+  width: 60px;       /* was 70px */
 }
 
 .feature-card h3 {
