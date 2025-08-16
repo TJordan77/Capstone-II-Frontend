@@ -77,6 +77,7 @@ export default function HuntPage() {
 
         <div className="cta-row">
           <Link className="btn primary" to={`/play?hunt=${hunt.id}`}>Start hunt</Link>
+          <Link className="btn ghost" to={`/leaderboard/${hunt.id}`}>Leaderboard</Link>
           <Link className="btn ghost" to="/">Back</Link>
         </div>
       </div>
