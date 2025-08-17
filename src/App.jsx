@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from "react"; // CHANGED: add useRef
+import React, { useState, useEffect, useRef } from "react"; // add useRef
 import { createRoot } from "react-dom/client";
-// import axios from "axios"; // keep using the shared api client
 import { api, initCsrf } from "./ApiClient";
 import "./AppStyles.css";
 import NavBar from "./components/NavBar";
@@ -22,12 +21,12 @@ import { auth0Config } from "./auth0-config";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
-// CHANGED: only create socket in development to avoid connecting in prod where server is disabled
+// Only create socket in development to avoid connecting in prod where server is disabled
 // Disable sockets entirely until the backend socket server is enabled
-const ENABLE_SOCKETS = false; // ADDED: flip to true when backend is ready
+const ENABLE_SOCKETS = false; // flip to true when backend is ready
 const socket = ENABLE_SOCKETS
   ? io(SOCKETS_URL, {
-      withCredentials: false, // CHANGED: not needed in dev for local sockets
+      withCredentials: false, // not needed in dev for local sockets
     })
   : null;
 
@@ -40,18 +39,18 @@ const App = () => {
     loginWithRedirect,
     logout: auth0Logout,
     isLoading: auth0Loading,
-    getIdTokenClaims,              // ADDED: will fetch Auth0 id_token for backend verification
+    getIdTokenClaims,              // will fetch Auth0 id_token for backend verification
   } = useAuth0();
 
-  const postedAuth0Ref = useRef(false); // ADDED: prevent duplicate backend posts
+  const postedAuth0Ref = useRef(false); // prevent duplicate backend posts
 
   useEffect(() => {
-    if (!socket) return;           // ADDED: guard when sockets are disabled in prod
+    if (!socket) return;           // guard when sockets are disabled in prod
     socket.on("connect", () => {
       console.log("🔗 Connected to socket");
     });
     return () => {
-      socket.off("connect");       // ADDED: cleanup
+      socket.off("connect");       // cleanup
     };
   }, []);
 
@@ -76,32 +75,37 @@ const App = () => {
 
   // Handle Auth0 authentication
   useEffect(() => {
-    if (isAuthenticated && auth0User && !postedAuth0Ref.current) { // ADDED: guard to avoid double-post
-      postedAuth0Ref.current = true;                               
+    if (isAuthenticated && auth0User && !postedAuth0Ref.current) { // guard to avoid double-post
+      postedAuth0Ref.current = true;
       handleAuth0Login();
     }
   }, [isAuthenticated, auth0User]);
 
   const handleAuth0Login = async () => {
     try {
-      // CHANGED: send a verified id_token to backend instead of raw profile fields
-      const claims = await getIdTokenClaims();         
-      const id_token = claims?.__raw;                   // (Auth0 SDK exposes the raw JWT here)
-      if (!id_token) throw new Error("No Auth0 id_token available"); 
+      // ensure CSRF cookie exists before posting token
+      await initCsrf();
 
-      // CHANGED: use shared api client so withCredentials and baseURL are consistent
-      const { data } = await api.post("/auth/auth0", { id_token });  
+      // send a verified id_token to backend instead of raw profile fields
+      const claims = await getIdTokenClaims();
+      const id_token = claims?.__raw;                   // (Auth0 SDK exposes the raw JWT here)
+      if (!id_token) throw new Error("No Auth0 id_token available");
+
+      // use shared api client so withCredentials and baseURL are consistent
+      const { data } = await api.post("/auth/auth0", { id_token });
       setUser(data.user);
     } catch (error) {
       console.error("Auth0 login error:", error);
+      postedAuth0Ref.current = false; // allow retry if something failed
     }
   };
 
   const handleLogout = async () => {
     try {
-      // CHANGED: use shared api client
+      // use shared api client
       await api.post("/auth/logout", {});
       setUser(null);
+      postedAuth0Ref.current = false; // ADDED: reset so next Auth0 login can post again
       // Logout from Auth0
       auth0Logout({
         logoutParams: {
@@ -138,7 +142,7 @@ const App = () => {
         <Routes>
           <Route path="/login" element={<Login setUser={setUser} onAuth0Login={handleAuth0LoginClick} />} />
           <Route path="/signup" element={<Signup setUser={setUser} />} />
-          <Route exact path="/" element={<Home isLoggedIn={showNav} />} />
+          <Route path="/" element={<Home isLoggedIn={showNav} />} />
           <Route
             path="/create"
             element={(!!user || isAuthenticated) ? <CreateHunt /> : <Navigate to="/login" replace state={{ from: "/create" }} />}
@@ -155,7 +159,7 @@ const App = () => {
 
 const Root = () => {
   return (
-    // CHANGED: wrapped the app with GoogleOAuthProvider so GoogleLogin can issue id_tokens
+    // wrapped the app with GoogleOAuthProvider so GoogleLogin can issue id_tokens
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <Auth0Provider {...auth0Config}>
         <Router>
