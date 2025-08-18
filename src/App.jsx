@@ -3,12 +3,7 @@ import { createRoot } from "react-dom/client";
 import { api, initCsrf } from "./ApiClient";
 import "./AppStyles.css";
 import NavBar from "./components/NavBar";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import Home from "./components/Home";
@@ -18,6 +13,7 @@ import HuntPage from "./components/HuntPage";
 import Leaderboard from "./components/Leaderboard";
 import JoinHunt from "./components/JoinHunt";
 import NotFound from "./components/NotFound";
+import Dashboard from "./components/Dashboard";
 
 import { API_URL, SOCKETS_URL, NODE_ENV } from "./shared";
 import { io } from "socket.io-client";
@@ -45,18 +41,18 @@ const App = () => {
     loginWithRedirect,
     logout: auth0Logout,
     isLoading: auth0Loading,
-    getIdTokenClaims,              // will fetch Auth0 id_token for backend verification
+    getIdTokenClaims, // will fetch Auth0 id_token for backend verification
   } = useAuth0();
 
   const postedAuth0Ref = useRef(false); // prevent duplicate backend posts
 
   useEffect(() => {
-    if (!socket) return;           // guard when sockets are disabled in prod
+    if (!socket) return; // guard when sockets are disabled in prod
     socket.on("connect", () => {
       console.log("🔗 Connected to socket");
     });
     return () => {
-      socket.off("connect");       // cleanup
+      socket.off("connect"); // cleanup
     };
   }, []);
 
@@ -71,17 +67,16 @@ const App = () => {
     }
   };
 
-  // Check authentication status on app load
   useEffect(() => {
     (async () => {
-      await initCsrf(); // get CSRF token first
-      await checkAuth(); // then check session
+      await initCsrf();
+      await checkAuth();
     })();
   }, []);
 
-  // Handle Auth0 authentication
   useEffect(() => {
-    if (isAuthenticated && auth0User && !postedAuth0Ref.current) { // guard to avoid double-post
+    if (isAuthenticated && auth0User && !postedAuth0Ref.current) {
+      // guard to avoid double-post
       postedAuth0Ref.current = true;
       handleAuth0Login();
     }
@@ -94,7 +89,7 @@ const App = () => {
 
       // send a verified id_token to backend instead of raw profile fields
       const claims = await getIdTokenClaims();
-      const id_token = claims?.__raw;                   // (Auth0 SDK exposes the raw JWT here)
+      const id_token = claims?.__raw; // (Auth0 SDK exposes the raw JWT here)
       if (!id_token) throw new Error("No Auth0 id_token available");
 
       // use shared api client so withCredentials and baseURL are consistent
@@ -111,7 +106,7 @@ const App = () => {
       // use shared api client
       await api.post("/auth/logout", {});
       setUser(null);
-      postedAuth0Ref.current = false; // ADDED: reset so next Auth0 login can post again
+      postedAuth0Ref.current = false; // reset so next Auth0 login can post again
       // Logout from Auth0
       auth0Logout({
         logoutParams: {
@@ -127,7 +122,6 @@ const App = () => {
     loginWithRedirect();
   };
 
-  // Show NavBar only when logged in (backend user OR Auth0)
   const showNav = !!user || isAuthenticated;
 
   if (loading) {
@@ -148,9 +142,7 @@ const App = () => {
         <Routes>
           <Route
             path="/login"
-            element={
-              <Login setUser={setUser} onAuth0Login={handleAuth0LoginClick} />
-            }
+            element={<Login setUser={setUser} onAuth0Login={handleAuth0LoginClick} />}
           />
           <Route path="/signup" element={<Signup setUser={setUser} />} />
           <Route path="/" element={<Home isLoggedIn={showNav} />} />
@@ -165,8 +157,11 @@ const App = () => {
             }
           />
           <Route path="/hunts/:id/" element={<HuntPage />} />
-          <Route path="/play/:huntId/checkpoints/:checkpointId" element={<PlayCheckpoint />} />
+          <Route path="/join" element={<JoinHunt />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/leaderboard/:huntId" element={<Leaderboard />} />
+          <Route path="/play/:huntId/checkpoints/:checkpointId" element={<PlayCheckpoint />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
@@ -174,16 +169,25 @@ const App = () => {
   );
 };
 
+// Small guard: boot without Google if the client id is missing
+const hasGoogle = Boolean(GOOGLE_CLIENT_ID);
+
+const AppProviders = ({ children }) =>
+  hasGoogle ? (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <Auth0Provider {...auth0Config}>{children}</Auth0Provider>
+    </GoogleOAuthProvider>
+  ) : (
+    <Auth0Provider {...auth0Config}>{children}</Auth0Provider>
+  );
+
 const Root = () => {
   return (
-    // wrapped the app with GoogleOAuthProvider so GoogleLogin can issue id_tokens
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <Auth0Provider {...auth0Config}>
-        <Router>
-          <App />
-        </Router>
-      </Auth0Provider>
-    </GoogleOAuthProvider>
+    <AppProviders>
+      <Router>
+        <App />
+      </Router>
+    </AppProviders>
   );
 };
 
