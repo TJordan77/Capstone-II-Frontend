@@ -69,6 +69,7 @@
 .home-nav-btn {
   color: white;
   background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
   transition: background 0.3s;
   padding: 1rem 1.8rem;
   font-size: 2rem;
@@ -89,7 +90,7 @@
   margin: 0 auto;
   padding: 0 2rem;
   gap: 2rem;
-  margin-top: 3rem;
+  margin-top: 2rem;
 }
 
 .home-hero-text {
@@ -204,7 +205,7 @@
     text-align: center;           /* center the headline on mobile */
     padding: 1rem;                /* tighter side padding on phones */
     gap: 1.25rem;                 /* less dead space between blocks */
-    margin-top: 3rem;
+    margin-top: 2rem;
   }
 
   .home-hero-text {
