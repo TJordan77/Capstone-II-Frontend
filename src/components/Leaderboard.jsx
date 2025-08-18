@@ -20,8 +20,10 @@ export default function Leaderboard() {
     (async () => {
       try {
         const { data } = await api.get(`/leaderboard/${huntId}`);
+        // Accept either an array or an object with { rows }
+        const list = Array.isArray(data) ? data : Array.isArray(data?.rows) ? data.rows : [];
         if (alive) {
-          setRows(Array.isArray(data) ? data : []);
+          setRows(list);
           setError("");
         }
       } catch (e) {
@@ -30,8 +32,13 @@ export default function Leaderboard() {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [huntId]);
+
+  const fmtDate = (d) => (d ? new Date(d).toLocaleString() : "");
+  const fmtUser = (r) => r?.username || r?.user?.username || r?.user?.email || "Unknown";
 
   // ----- Landing mode (no :huntId) -----
   if (!huntId) {
@@ -79,24 +86,33 @@ export default function Leaderboard() {
   return (
     <div className="leaderboard">
       <h2>Leaderboard</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>#</th><th>User</th><th>Badges</th><th>Time (s)</th><th>Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={`${row.userId || row.user?.id || i}-${i}`}>
-              <td>{i + 1}</td>
-              <td>{row.username || row.user?.username}</td>
-              <td>{row.badgeCount ?? row.totalBadges ?? 0}</td>
-              <td>{row.timeSeconds ?? row.completionTime ?? "—"}</td>
-              <td>{row.completedAt ? new Date(row.completedAt).toLocaleString() : ""}</td>
+
+      {rows.length === 0 ? (
+        <div className="leaderboard-empty">No results yet. Be the first to finish!</div>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>User</th>
+              <th>Badges</th>
+              <th>Time (s)</th>
+              <th>Date</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={`${row.userId ?? row.user?.id ?? i}-${row.huntId ?? huntId}-${i}`}>
+                <td>{row.rank ?? i + 1}</td>
+                <td>{fmtUser(row)}</td>
+                <td>{row.badgeCount ?? row.totalBadges ?? 0}</td>
+                <td>{row.timeSeconds ?? row.completionTime ?? "—"}</td>
+                <td>{fmtDate(row.completedAt ?? row.completionDate)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

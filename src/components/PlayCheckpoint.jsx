@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { api, initCsrf } from "../ApiClient"; // uses the same axios instance + CSRF bootstrap
+import { useParams, useNavigate } from "react-router-dom";
+import { api, initCsrf } from "../ApiClient";
 
 export default function PlayCheckpoint() {
   const { huntId, checkpointId } = useParams(); // e.x., /play/:huntId/checkpoints/:checkpointId
+  const navigate = useNavigate();
+
   const [answer, setAnswer] = useState("");
   const [coords, setCoords] = useState({ lat: null, lng: null });
   const [geoErr, setGeoErr] = useState("");
@@ -11,9 +13,12 @@ export default function PlayCheckpoint() {
   const [result, setResult] = useState(null); // { wasCorrect, attemptsUsed, attemptsRemaining }
   const [error, setError] = useState("");
 
-  // ADDED TODO: replace this with the real userHuntId you get after the player joins a hunt
-  const [userHuntId] = useState(() => {
-    // If you already have it in auth/store, pull from there instead.
+  // load checkpoint details for title/riddle display
+  const [checkpoint, setCheckpoint] = useState(null);
+
+  // replace this with the real userHuntId we get after the player joins a hunt
+  const [userHuntId, setUserHuntId] = useState(() => {
+    // If we already have it in auth/store, pull from there instead.
     const fromStorage = localStorage.getItem("userHuntId");
     return fromStorage ? Number(fromStorage) : null;
   });
@@ -43,6 +48,43 @@ export default function PlayCheckpoint() {
     getLocation(); // grab location on mount
   }, []);
 
+  // auto-join the hunt if we don't have a userHuntId yet
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!userHuntId) {
+          await initCsrf(); // ensure CSRF cookie
+          const { data } = await api.post(`/hunts/${huntId}/join`, {});
+          if (data?.userHuntId) {
+            localStorage.setItem("userHuntId", String(data.userHuntId));
+            setUserHuntId(Number(data.userHuntId));
+          }
+        }
+      } catch (e) {
+        // non-blocking: user might not be logged in yet; submission will guard
+        console.warn("join failed (non-blocking):", e?.response?.data || e?.message);
+      }
+    })();
+  }, [huntId, userHuntId]);
+
+  // load the hunt to get this checkpoint's title/riddle
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const { data } = await api.get(`/hunts/${huntId}`);
+        const cp = (data?.checkpoints || []).find((c) => String(c.id) === String(checkpointId));
+        if (!cp) throw new Error("Checkpoint not found");
+        if (alive) setCheckpoint(cp);
+      } catch (e) {
+        if (alive) setError(e?.response?.data?.error || e.message || "Failed to load checkpoint");
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [huntId, checkpointId]);
+
   async function submitAttempt(e) {
     e.preventDefault();
     setError("");
@@ -67,15 +109,27 @@ export default function PlayCheckpoint() {
       const { data } = await api.post(`/play/checkpoints/${checkpointId}/attempt`, {
         userHuntId,
         answer: answer.trim(),
-        lat: coords.lat,
-        lng: coords.lng,
+        // align with backend: use attemptLat/attemptLng
+        attemptLat: coords.lat,
+        attemptLng: coords.lng,
       });
+
       setResult({
         wasCorrect: !!data?.wasCorrect,
         attemptsUsed: data?.attemptsUsed ?? null,
         attemptsRemaining: data?.attemptsRemaining ?? null,
       });
-      if (data?.wasCorrect) setAnswer("");
+
+      // navigation on success to next checkpoint or finish
+      if (data?.wasCorrect) {
+        setAnswer("");
+        if (data?.finished) {
+          // replace with a dedicated finish screen if/when you add it
+          navigate(`/hunts/${huntId}`);
+        } else if (data?.nextCheckpointId) {
+          navigate(`/play/${huntId}/checkpoints/${data.nextCheckpointId}`);
+        }
+      }
     } catch (err) {
       const msg = err?.response?.data?.error || "Submission failed.";
       setError(msg);
@@ -86,7 +140,9 @@ export default function PlayCheckpoint() {
 
   return (
     <div className="play-wrap" style={{ padding: 16, maxWidth: 720, margin: "0 auto" }}>
-      <h2>Checkpoint</h2>
+      <h2>{checkpoint?.title || "Checkpoint"}</h2>
+      {checkpoint?.riddle && <p style={{ opacity: 0.95 }}>{checkpoint.riddle}</p>}
+
       <div style={{ opacity: 0.85, marginBottom: 8 }}>
         Hunt: <code>{huntId || "unknown"}</code> · Checkpoint: <code>{checkpointId}</code>
       </div>
