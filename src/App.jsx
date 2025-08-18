@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from "react"; // CHANGED: add useRef
+import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
-// import axios from "axios"; // keep using the shared api client
 import { api, initCsrf } from "./ApiClient";
 import "./AppStyles.css";
 import NavBar from "./components/NavBar";
@@ -17,8 +16,10 @@ import CreateHunt from "./components/CreateHunt";
 import PlayCheckpoint from "./components/PlayCheckpoint";
 import HuntPage from "./components/HuntPage";
 import JoinHunt from "./components/JoinHunt";
-
 import NotFound from "./components/NotFound";
+import Leaderboard from "./components/Leaderboard";
+import Dashboard from "./components/Dashboard";
+
 import { API_URL, SOCKETS_URL, NODE_ENV } from "./shared";
 import { io } from "socket.io-client";
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
@@ -27,12 +28,10 @@ import { auth0Config } from "./auth0-config";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
-// CHANGED: only create socket in development to avoid connecting in prod where server is disabled
-// Disable sockets entirely until the backend socket server is enabled
-const ENABLE_SOCKETS = false; // ADDED: flip to true when backend is ready
+const ENABLE_SOCKETS = false;
 const socket = ENABLE_SOCKETS
   ? io(SOCKETS_URL, {
-      withCredentials: false, // CHANGED: not needed in dev for local sockets
+      withCredentials: false,
     })
   : null;
 
@@ -45,18 +44,18 @@ const App = () => {
     loginWithRedirect,
     logout: auth0Logout,
     isLoading: auth0Loading,
-    getIdTokenClaims, // ADDED: will fetch Auth0 id_token for backend verification
+    getIdTokenClaims,
   } = useAuth0();
 
-  const postedAuth0Ref = useRef(false); // ADDED: prevent duplicate backend posts
+  const postedAuth0Ref = useRef(false);
 
   useEffect(() => {
-    if (!socket) return; // ADDED: guard when sockets are disabled in prod
+    if (!socket) return;
     socket.on("connect", () => {
       console.log("🔗 Connected to socket");
     });
     return () => {
-      socket.off("connect"); // ADDED: cleanup
+      socket.off("connect");
     };
   }, []);
 
@@ -71,18 +70,15 @@ const App = () => {
     }
   };
 
-  // Check authentication status on app load
   useEffect(() => {
     (async () => {
-      await initCsrf(); // get CSRF token first
-      await checkAuth(); // then check session
+      await initCsrf();
+      await checkAuth();
     })();
   }, []);
 
-  // Handle Auth0 authentication
   useEffect(() => {
     if (isAuthenticated && auth0User && !postedAuth0Ref.current) {
-      // ADDED: guard to avoid double-post
       postedAuth0Ref.current = true;
       handleAuth0Login();
     }
@@ -90,12 +86,10 @@ const App = () => {
 
   const handleAuth0Login = async () => {
     try {
-      // CHANGED: send a verified id_token to backend instead of raw profile fields
       const claims = await getIdTokenClaims();
-      const id_token = claims?.__raw; // (Auth0 SDK exposes the raw JWT here)
+      const id_token = claims?.__raw;
       if (!id_token) throw new Error("No Auth0 id_token available");
 
-      // CHANGED: use shared api client so withCredentials and baseURL are consistent
       const { data } = await api.post("/auth/auth0", { id_token });
       setUser(data.user);
     } catch (error) {
@@ -105,10 +99,8 @@ const App = () => {
 
   const handleLogout = async () => {
     try {
-      // CHANGED: use shared api client
       await api.post("/auth/logout", {});
       setUser(null);
-      // Logout from Auth0
       auth0Logout({
         logoutParams: {
           returnTo: window.location.origin,
@@ -123,7 +115,6 @@ const App = () => {
     loginWithRedirect();
   };
 
-  // Show NavBar only when logged in (backend user OR Auth0)
   const showNav = !!user || isAuthenticated;
 
   if (loading) {
@@ -166,6 +157,9 @@ const App = () => {
             element={<PlayCheckpoint />}
           />
           <Route path="/join" element={<JoinHunt />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/leaderboard/:huntId" element={<Leaderboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
@@ -175,7 +169,6 @@ const App = () => {
 
 const Root = () => {
   return (
-    // CHANGED: wrapped the app with GoogleOAuthProvider so GoogleLogin can issue id_tokens
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <Auth0Provider {...auth0Config}>
         <Router>

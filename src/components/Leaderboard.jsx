@@ -1,49 +1,98 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useParams } from 'react-router-dom';
-import './Leaderboard.css'; 
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { api } from "../ApiClient";
+import "./Leaderboard.css";
 
-function Leaderboard() {
-  const [leaderboardData, setLeaderboardData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { huntId } = useParams(); // Get huntId from the URL
+export default function Leaderboard() {
+  const { huntId } = useParams();
+  const navigate = useNavigate();
 
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(Boolean(huntId));
+  const [error, setError] = useState("");
+  const [idInput, setIdInput] = useState("");
+
+  // Only fetch when we actually have a huntId (table mode)
   useEffect(() => {
-    const fetchLeaderboard = async () => {
+    if (!huntId) return; // landing mode (no fetch)
+    let alive = true;
+    setLoading(true);
+    (async () => {
       try {
-        const response = await axios.get(`http://localhost:3001/api/hunts/${huntId}/leaderboard`);
-        setLeaderboardData(response.data);
-      } catch (error) {
-        console.error('Error fetching leaderboard:', error);
+        const { data } = await api.get(`/leaderboard/${huntId}`);
+        if (alive) {
+          setRows(Array.isArray(data) ? data : []);
+          setError("");
+        }
+      } catch (e) {
+        if (alive) setError(e?.response?.data?.error || "Failed to load leaderboard");
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
-    };
-    fetchLeaderboard();
+    })();
+    return () => { alive = false; };
   }, [huntId]);
 
-  if (loading) return <div>Loading leaderboard...</div>;
-  if (leaderboardData.length === 0) return <div>No scores have been submitted for this hunt yet.</div>;
+  // ----- Landing mode (no :huntId) -----
+  if (!huntId) {
+    const last = localStorage.getItem("lastHuntId");
+    return (
+      <div className="leaderboard">
+        <h2>Leaderboards</h2>
+        <p>Select a hunt to view its leaderboard.</p>
+
+        <div style={{ display: "grid", gap: 10, maxWidth: 420 }}>
+          {last && (
+            <button className="btn cta" onClick={() => navigate(`/leaderboard/${last}`)}>
+              Open last viewed leaderboard
+            </button>
+          )}
+
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={idInput}
+              onChange={(e) => setIdInput(e.target.value)}
+              placeholder="Enter Hunt ID…"
+              className="input"
+              style={{ flex: 1, padding: "10px 12px", borderRadius: 8 }}
+            />
+            <button
+              className="btn"
+              onClick={() => idInput && navigate(`/leaderboard/${idInput.trim()}`)}
+            >
+              Go
+            </button>
+          </div>
+
+          <div style={{ opacity: 0.8 }}>
+            Or <Link to="/">browse hunts</Link> and use the hunt’s Leaderboard link.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ----- Table mode (with :huntId) -----
+  if (loading) return <div className="leaderboard">Loading…</div>;
+  if (error) return <div className="leaderboard error">{error}</div>;
 
   return (
-    <div>
-      <h2>Leaderboard for Hunt #{huntId}</h2>
+    <div className="leaderboard">
+      <h2>Leaderboard</h2>
       <table>
         <thead>
           <tr>
-            <th>Rank</th>
-            <th>Player</th>
-            <th>Time (seconds)</th>
-            <th>Date</th>
+            <th>#</th><th>User</th><th>Badges</th><th>Time (s)</th><th>Date</th>
           </tr>
         </thead>
         <tbody>
-          {leaderboardData.map((score, index) => (
-            <tr key={score.id}>
-              <td>{index + 1}</td>
-              <td>{score.User.username}</td>
-              <td>{score.completionTime}</td>
-              <td>{new Date(score.completionDate).toLocaleDateString()}</td>
+          {rows.map((row, i) => (
+            <tr key={`${row.userId || row.user?.id || i}-${i}`}>
+              <td>{i + 1}</td>
+              <td>{row.username || row.user?.username}</td>
+              <td>{row.badgeCount ?? row.totalBadges ?? 0}</td>
+              <td>{row.timeSeconds ?? row.completionTime ?? "—"}</td>
+              <td>{row.completedAt ? new Date(row.completedAt).toLocaleString() : ""}</td>
             </tr>
           ))}
         </tbody>
@@ -51,5 +100,3 @@ function Leaderboard() {
     </div>
   );
 }
-
-export default Leaderboard;
