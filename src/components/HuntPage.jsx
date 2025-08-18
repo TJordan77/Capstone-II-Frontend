@@ -17,6 +17,7 @@ export default function HuntPage() {
       try {
         const { data } = await api.get(`/hunts/${id}`);
         if (alive) setHunt(data);
+        localStorage.setItem("lastHuntId", String(id));
       } catch (e) {
         if (alive) setError(e?.response?.data?.error || "Failed to load hunt");
       } finally {
