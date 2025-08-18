@@ -3,7 +3,12 @@ import { createRoot } from "react-dom/client";
 import { api, initCsrf } from "./ApiClient";
 import "./AppStyles.css";
 import NavBar from "./components/NavBar";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import Home from "./components/Home";
@@ -11,8 +16,9 @@ import CreateHunt from "./components/CreateHunt";
 import PlayCheckpoint from "./components/PlayCheckpoint";
 import HuntPage from "./components/HuntPage";
 import Leaderboard from "./components/Leaderboard";
-
+import JoinHunt from "./components/JoinHunt";
 import NotFound from "./components/NotFound";
+
 import { API_URL, SOCKETS_URL, NODE_ENV } from "./shared";
 import { io } from "socket.io-client";
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
@@ -68,8 +74,8 @@ const App = () => {
   // Check authentication status on app load
   useEffect(() => {
     (async () => {
-      await initCsrf();     // get CSRF token first
-      await checkAuth();    // then check session
+      await initCsrf(); // get CSRF token first
+      await checkAuth(); // then check session
     })();
   }, []);
 
@@ -140,12 +146,23 @@ const App = () => {
       )}
       <div className="app">
         <Routes>
-          <Route path="/login" element={<Login setUser={setUser} onAuth0Login={handleAuth0LoginClick} />} />
+          <Route
+            path="/login"
+            element={
+              <Login setUser={setUser} onAuth0Login={handleAuth0LoginClick} />
+            }
+          />
           <Route path="/signup" element={<Signup setUser={setUser} />} />
           <Route path="/" element={<Home isLoggedIn={showNav} />} />
           <Route
             path="/create"
-            element={(!!user || isAuthenticated) ? <CreateHunt /> : <Navigate to="/login" replace state={{ from: "/create" }} />}
+            element={
+              !!user || isAuthenticated ? (
+                <CreateHunt />
+              ) : (
+                <Navigate to="/login" replace state={{ from: "/create" }} />
+              )
+            }
           />
           <Route path="/hunts/:id/" element={<HuntPage />} />
           <Route path="/play/:huntId/checkpoints/:checkpointId" element={<PlayCheckpoint />} />
