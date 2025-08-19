@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, initCsrf } from '../ApiClient';
 
-function CreatorDashboard() {
+function CreatorDashboard({ user }) {
   const [hunts, setHunts] = useState([]);
   const [newHuntTitle, setNewHuntTitle] = useState('');
   const [newHuntDescription, setNewHuntDescription] = useState('');
@@ -10,14 +10,16 @@ function CreatorDashboard() {
   const navigate = useNavigate();
 
   // Replace with actual creator ID from auth context
-  const creatorId = 1;
+  const creatorId = user?.id;
 
   useEffect(() => {
+    if (!creatorId) return;        // Gotta guard this until user is ready
     fetchHunts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [creatorId]);
 
   const fetchHunts = async () => {
+    if (!creatorId) return;        // A little extra safety
     setError('');
     try {
       const { data } = await api.get(`/hunts/creator/${creatorId}`);
