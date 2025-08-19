@@ -3,8 +3,8 @@
   position: fixed;
   inset: 0;
   background: no-repeat center / cover;
-  z-index: 0;
-  pointer-events: none; /* prevent clicks */
+  z-index: -1;            
+  pointer-events: none;
 }
 
 /* Page container now sits above */
@@ -23,6 +23,11 @@
   grid-template-columns: 1fr 1fr;
   gap:26px;
   margin-bottom:26px;
+}
+
+.dashboards-shell{
+  width: 100%;
+  max-width: 1060px;
 }
 
 /* Center everything inside each card */
