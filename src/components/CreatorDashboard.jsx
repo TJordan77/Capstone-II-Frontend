@@ -10,7 +10,7 @@ function CreatorDashboard({ user }) {
   const navigate = useNavigate();
 
   // Replace with actual creator ID from auth context
-  const creatorId = user?.id;
+  const creatorId = user?.id ?? user?.userId ?? null; // tolerate variations
 
   useEffect(() => {
     if (!creatorId) return;        // Gotta guard this until user is ready
