@@ -85,12 +85,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 650px; /* fixed so grass lines up */
+  height: 550px; /* fixed so grass lines up - CHANGED: Didn't like how low it pushed everything */
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 2rem;
   gap: 2rem;
-  margin-top: 1rem;
+  margin-top: 2rem;
 }
 
 .home-hero-text {
@@ -205,7 +205,7 @@
     text-align: center;           /* center the headline on mobile */
     padding: 1rem;                /* tighter side padding on phones */
     gap: 1.25rem;                 /* less dead space between blocks */
-    margin-top: 1rem;
+    margin-top: 2rem;
   }
 
   .home-hero-text {
