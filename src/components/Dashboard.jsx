@@ -1,116 +1,66 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../ApiClient";
-//import " ./Dashboard.css";
+
+// Note: Removed api and related state as the new design is a static menu. No fetching 
+
 
 const Dashboard = () => {
-  const [huntsCreated, setHuntsCreated] = useState([]);
-  const [huntsJoined, setHuntsJoined] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const createdResponse = await api.get("/hunts/created");
-        setHuntsCreated(createdResponse.data);
-
-        const joinedResponse = await api.get("/hunts/joined");
-        setHuntsJoined(joinedResponse.data);
-      } catch (err) {
-        setError("Failed to fetch dashboard data. Please try again later.");
-        console.error("Dashboard fetch error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl font-semibold text-gray-700">Loading your dashboard...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl font-semibold text-red-500">{error}</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-3xl font-bold text-gray-800 mb-8">
-          Your Dashboard
+    <div className="min-h-screen bg-[#2d2243] flex flex-col items-center justify-center p-8 text-white">
+      <div className="text-center mb-16">
+        {/* Placeholder for the SideQuest logo and text */}
+        <div className="flex items-center justify-center mb-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="w-16 h-16 text-[#69c7cc]"
+          >
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07L15.6 4.4a1 1 0 0 1 1.41 1.41l-1.61 1.62a3 3 0 1 1-4.24 4.24l-3-3a3 3 0 0 1 4.24-4.24l1.61 1.61a1 1 0 0 1-1.41 1.41l-1.61-1.61a1 1 0 0 0-1.41 1.41l3 3a1 1 0 0 0 1.41-1.41l-1.61-1.61a1 1 0 0 1 1.41-1.41l1.61 1.61a1 1 0 0 0 1.41-1.41l-3-3a5 5 0 0 0-7.07 7.07l3 3a5 5 0 0 0 7.54-.54" />
+          </svg>
+          <span className="text-5xl font-extrabold ml-4 tracking-wide">SIDEQUEST</span>
         </div>
-        
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-700 mb-4">
-            Hunts You've Created
-          </h2>
-          {huntsCreated.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {huntsCreated.map((hunt) => (
-                <div key={hunt.id} className="bg-white rounded-lg shadow-lg p-6 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-800">{hunt.name}</h3>
-                    <p className="mt-2 text-gray-600">{hunt.description}</p>
-                  </div>
-                  <div className="mt-4 flex space-x-2">
-                    <Link to={`/hunts/${hunt.id}`} className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
-                      View
-                    </Link>
-                    <Link to={`/hunts/${hunt.id}/edit`} className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">
-                      Edit
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 italic">You haven't created any hunts yet. <Link to="/create" className="text-blue-500 hover:underline">Create your first one now!</Link></p>
-          )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
+        {/* Creator Dashboard Section */}
+        <div className="bg-[#46395c] rounded-xl shadow-xl p-8 flex flex-col items-center text-center">
+          <h2 className="text-3xl font-semibold mb-2">Creator Dashboard</h2>
+          <p className="text-gray-300 mb-6">Manage your treasure hunts</p>
+          <Link
+            to="/create"
+            className="bg-sidequest-green text-gray-800 px-8 py-3 rounded-full font-bold text-lg hover:bg-opacity-80 transition-colors"
+          >
+            Create Hunt
+          </Link>
         </div>
 
-        <div>
-          <h2 className="text-2xl font-bold text-gray-700 mb-4">
-            Hunts You've Joined
-          </h2>
-          {huntsJoined.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {huntsJoined.map((hunt) => (
-                <div key={hunt.id} className="bg-white rounded-lg shadow-lg p-6 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-800">{hunt.name}</h3>
-                    <p className="mt-2 text-gray-600">{hunt.description}</p>
-                  </div>
-                  <div className="mt-4">
-                    <Link to={`/play/${hunt.id}`} className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors">
-                      Continue Play
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 italic">You haven't joined any hunts yet. <Link to="/join" className="text-blue-500 hover:underline">Find a hunt to join!</Link></p>
-          )}
+        {/* Player Dashboard Section */}
+        <div className="bg-[#46395c] rounded-xl shadow-xl p-8 flex flex-col items-center text-center">
+          <h2 className="text-3xl font-semibold mb-2">Player Dashboard</h2>
+          <p className="text-gray-300 mb-6">Continue your adventure</p>
+          <Link
+            to="/join"
+            className="bg-sidequest-green text-gray-800 px-8 py-3 rounded-full font-bold text-lg hover:bg-opacity-80 transition-colors"
+          >
+            View Hunts
+          </Link>
         </div>
 
-        <div className="flex justify-center mt-12">
-            <Link to="/create" className="bg-sidequest-green text-white px-6 py-3 rounded-lg text-lg font-semibold hover:bg-opacity-80 transition-opacity mr-4">
-                Create a Hunt
-            </Link>
-            <Link to="/join" className="bg-sidequest-yellow text-gray-800 px-6 py-3 rounded-lg text-lg font-semibold hover:bg-opacity-80 transition-opacity">
-                Join a Hunt
-            </Link>
+        {/* Badge Gallery Section */}
+        <div className="md:col-span-2 bg-[#46395c] rounded-xl shadow-xl p-8 flex flex-col items-center text-center">
+          <h2 className="text-3xl font-semibold mb-2">Badge Gallery</h2>
+          <p className="text-gray-300 mb-6">See the badges you have earned</p>
+          <Link
+            to="/badges"
+            className="bg-sidequest-yellow text-gray-800 px-8 py-3 rounded-full font-bold text-lg hover:bg-opacity-80 transition-colors"
+          >
+            View Badges
+          </Link>
         </div>
       </div>
     </div>
