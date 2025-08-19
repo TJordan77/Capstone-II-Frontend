@@ -4,15 +4,23 @@
   --teal-700:#11868c;
   --teal-650:#14929a;
 
-  --sidebar:#0f7a7e;
+  /* Sidebar/nav color */
+  --sidebar:#0da595;
+
   --ink:#e9f6ee;
   --muted:#c9ece8;
 
-  --accent:#ffcb13;      /* + New Hunt */
+  /* + New Hunt button */
+  --accent:#fbcf1f;
   --accent-press:#e7b800;
+  --accent-text:#29584b;
 
-  --card:#0f6e6f;
-  --card-2:#0f777a;
+  /* Hunt cards — flat teal */
+  --card:#008f84;
+  --card-2:#008f84;
+
+  /* Creator Dashboard banner */
+  --header-bg:#2ab8bf;
 
   --radius:20px;
   --radius-lg:24px;
@@ -60,17 +68,17 @@
   background: transparent;
   transition: background .2s ease, transform .05s ease;
 }
-.cd-nav-item:hover{ background: rgba(255,255,255,.08); }
+.cd-nav-item:hover{ background: rgba(13,165,149,.18) }
 .cd-nav-item--active{
-  background: rgba(0,0,0,.18);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+  background: #0da595;
+  box-shadow: none;
 }
 .cd-nav-icon{ inline-size:20px; text-align:center; opacity:.9; }
 
 .cd-new-hunt{
   margin-top:auto;
-  background: var(--accent);
-  color:#0e606c;
+  background: var(--accent);               /* #fbcf1f */
+  color: var(--accent-text);               /* #29584b */
   font-weight:800;
   border:0; border-radius:14px;
   padding:14px 16px; cursor:pointer;
@@ -87,12 +95,12 @@
 .cd-header{
   display:flex; align-items:center; justify-content:space-between;
   padding:14px 16px; border-radius:16px;
-  background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.05));
+  background: var(--header-bg); 
   box-shadow: var(--shadow-sm);
 }
 .cd-title{ font-size:28px; letter-spacing:.6px; font-weight:800; }
 .cd-avatar-wrap{ width:44px; height:44px; border-radius:50%; overflow:hidden;
-  box-shadow:0 0 0 3px rgba(255,255,255,.18); }
+  box-shadow:0 0 0 3px rgba(255,255,255,.18); .cd-avatar-wrap{ display:none !important; }}
 .cd-avatar{ width:100%; height:100%; object-fit:cover; }
 
 /* Stat tiles */
@@ -128,7 +136,7 @@
 
 /* Hunt card matches teal blocks from mockup */
 .cd-hunt-card{
-  background: linear-gradient(180deg, var(--card-2), var(--card));
+  background: var(--card);  
   color:var(--ink);
   border-radius:16px;
   padding:18px;
