@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, initCsrf } from '../ApiClient';
+import "./CreatorDashboard.css";
 
 function CreatorDashboard({ user }) {
   const [hunts, setHunts] = useState([]);
