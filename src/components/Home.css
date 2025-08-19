@@ -205,7 +205,7 @@
     text-align: center;           /* center the headline on mobile */
     padding: 1rem;                /* tighter side padding on phones */
     gap: 1.25rem;                 /* less dead space between blocks */
-    margin-top: 2rem;
+    margin-top: 1rem;
   }
 
   .home-hero-text {
