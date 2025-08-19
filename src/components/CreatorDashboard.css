@@ -188,3 +188,52 @@
   .cd-hunts-grid{ grid-template-columns: 1fr; }
   .cd-title{ font-size:24px; }
 }
+
+/* Actions row inside hunt cards */
+.cd-card-actions{
+  margin-top:14px;
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  align-items:center;
+}
+
+/* Ghost pill buttons / links */
+.cd-link{
+  appearance:none;
+  -webkit-appearance:none;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: var(--ink);
+  text-decoration:none;
+  font-weight:800;
+  font-size:14px;
+  padding:8px 12px;
+  border-radius:12px;
+  cursor:pointer;
+  box-shadow: var(--shadow-sm);
+  transition: background .15s ease, transform .03s ease, border-color .15s ease;
+}
+.cd-link:hover{
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.2);
+}
+.cd-link:active{ transform: translateY(1px); }
+
+/* Danger variant for Delete */
+.cd-link--danger{
+  background: rgba(255,80,80,.16);
+  border-color: rgba(255,80,80,.35);
+}
+.cd-link--danger:hover{
+  background: rgba(255,80,80,.26);
+  border-color: rgba(255,80,80,.45);
+}
+
+/* Keep left alignment even if globals center text */
+.cd-card-actions, .cd-link { text-align:left; }
+
+/* Reset any global centering so the dashboard aligns left */
+.cd-layout, .cd-main, .cd-sidebar, .cd-header, .cd-stats, .cd-hunts-grid { 
+  text-align: left; 
+}
