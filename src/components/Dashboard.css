@@ -1,0 +1,17 @@
+:root {
+  --sidequest-green: #4ade80;
+  --sidequest-yellow: #fde047;
+}
+
+.bg-sidequest-green {
+  background-color: var(--sidequest-green);
+}
+
+.bg-sidequest-yellow {
+  background-color: var(--sidequest-yellow);
+}
+
+body {
+  background-color: #f3f4f6;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
