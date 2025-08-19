@@ -16,7 +16,7 @@ import NotFound from "./components/NotFound";
 import Dashboard from "./components/Dashboard";
 import CreatorDashboard from "./components/CreatorDashboard";
 import EditHunt from "./components/EditHunt";
-import Profile from "./pages/Profile"; 
+import Profile from "./components/Profile"; 
 
 import { API_URL, SOCKETS_URL, NODE_ENV } from "./shared";
 import { io } from "socket.io-client";
