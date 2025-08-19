@@ -1,6 +1,17 @@
+/* Background layer (same as Home.jsx) */
+.home-bg {
+  position: fixed;
+  inset: 0;
+  background: no-repeat center / cover;
+  z-index: 0;
+  pointer-events: none; /* prevent clicks */
+}
+
+/* Page container now sits above */
 .dashboards-landing{
+  position: relative;          /* allow z-index */
+  z-index: 1;                  /* above .home-bg */
   min-height:100vh;
-  background: url("/background.png") center/cover no-repeat fixed;
   display:flex; justify-content:center; align-items:flex-start;
   padding:56px 20px 72px;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
@@ -26,11 +37,11 @@
   /* center the content */
   display: flex;
   flex-direction: column;
-  align-items: center;        /* horizontal centering */
-  justify-content: center;    /* vertical centering */
-  gap: 12px;                  /* spacing between title, sub, button */
-  text-align: center;         /* center text */
-  min-height: 240px;          /* ensures nice vertical centering */
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  min-height: 240px;
 }
 
 .dash-card.full{ 
@@ -38,20 +49,19 @@
   min-height: 260px;
 }
 
-/* Title & subtitle now centered by parent */
+/* Title & subtitle */
 .card-title{
   font-size: clamp(1.35rem, 1.4vw, 1.7rem);
-  margin: 0;                  /* tighter since we use gap */
+  margin: 0;
 }
-
 .card-sub{
   margin: 0;
   color: var(--text-sub);
   font-weight: 500;
-  max-width: 48ch;            /* keeps lines readable in wide cards */
+  max-width: 48ch;
 }
 
-/* Buttons already inline-block; centered by flex parent */
+/* Buttons */
 .btn{
   display:inline-block;
   padding: 14px 22px;
@@ -72,7 +82,6 @@
 @media (max-width: 640px){
   .dashboards-landing{
     padding: 28px 16px 52px;
-    background-attachment: scroll;      /* smoother on mobile */
   }
 
   .dashboards-shell{
@@ -87,34 +96,24 @@
   .brand-logo{ width: 64px; height: 64px; }
   .brand-wordmark{ font-size: clamp(1.8rem, 7vw, 2.4rem); }
 
-  /* Stack cards in a single column */
+  /* Stack cards */
   .cards-grid{
-    display: grid;
-    grid-template-columns: 1fr;         /* <- single column */
+    grid-template-columns: 1fr;
     gap: 16px;
     margin-bottom: 18px;
   }
 
   .dash-card{
-    min-height: 180px;                  /* shorter cards on mobile */
+    min-height: 180px;
     padding: 20px;
     gap: 10px;
     border-radius: 16px;
   }
 
-  .dash-card.full{
-    grid-column: 1 / -1;
-    min-height: 200px;
-  }
+  .dash-card.full{ min-height: 200px; }
 
-  .card-title{
-    font-size: 1.25rem;
-  }
-
-  .card-sub{
-    font-size: .95rem;
-    max-width: 32ch;                    /* keep lines readable */
-  }
+  .card-title{ font-size: 1.25rem; }
+  .card-sub{ font-size: .95rem; max-width: 32ch; }
 
   .btn{
     padding: 12px 18px;
@@ -123,8 +122,8 @@
   }
 }
 
-/* Slightly wider phones/phablets still single column */
-@media (min-width: 641px) and (max-width: 840px){
+/* Phablets */
+@media (min-width: 640px) and (max-width: 840px){
   .cards-grid{ grid-template-columns: 1fr; }
   .dash-card{ min-height: 200px; }
 }
