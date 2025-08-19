@@ -6,6 +6,11 @@ import { api, initCsrf } from "../ApiClient";
 export default function Dashboard() {
   return (
     <div className="dashboards-landing">
+      <div
+        className="home-bg"
+        style={{ backgroundImage: 'url("/background.png")' }}
+        aria-hidden="true"
+      />
       <div className="dashboards-shell">
         {/* Brand lockup */}
         <div className="brand-row">
