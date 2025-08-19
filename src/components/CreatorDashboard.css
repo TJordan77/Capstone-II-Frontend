@@ -144,7 +144,7 @@
 
 /* Hunt card matches teal blocks from mockup */
 .cd-hunt-card{
-  background: var(--card) !important;                 /* #008f84 */
+  background: #008f84 !important;                 /* #008f84 */
   color:var(--ink);
   border-radius:16px;
   padding:18px;
