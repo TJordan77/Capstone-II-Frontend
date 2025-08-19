@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../ApiClient";
 import { Link } from "react-router-dom";
-import "./profile.css";
+import "./Profile.css";
 
 function slugifyName(name = "") {
   return String(name)
@@ -12,9 +12,9 @@ function slugifyName(name = "") {
 }
 
 function getBadgeIcon(badge) {
-  if (badge?.imageUrl) return badge.imageUrl; // from DB
+  if (badge?.imageUrl) return badge.imageUrl;
   const slug = slugifyName(badge?.name || "");
-  return `/icon-${slug}.png`; // served from /public
+  return `/icon-${slug}.png`;
 }
 
 const Profile = () => {
@@ -34,7 +34,6 @@ const Profile = () => {
   useEffect(() => {
     (async () => {
       try {
-        // who am I
         const meResp = await api.get("/auth/me");
         const me = meResp?.data?.user || meResp?.data || null;
         if (!me) throw new Error("No user in /auth/me response");
@@ -49,7 +48,6 @@ const Profile = () => {
           email: me.email || "",
         });
 
-        // stats & badges
         const userId = me.id;
         const [createdRes, joinedRes, badgesRes] = await Promise.all([
           api.get(`/users/${userId}/hunts/created`),
@@ -122,10 +120,7 @@ const Profile = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      const body = {
-        name: formData.name,
-        email: formData.email,
-      };
+      const body = { name: formData.name, email: formData.email };
       if (avatarPreview) body.profilePicture = avatarPreview;
 
       const { data } = await api.put("/auth/profile", body);
@@ -158,6 +153,12 @@ const Profile = () => {
 
   return (
     <div className="profile-page">
+      {/* Background like Home: inline style so it loads correctly */}
+      <div
+        className="profile-bg"
+        style={{ backgroundImage: 'url("/background.png")' }}
+        aria-hidden="true"
+      />
       <div className="profile-container">
         <div className="profile-title">PROFILE</div>
 
@@ -256,9 +257,7 @@ const Profile = () => {
           {editing && (
             <form className="profile-form" onSubmit={handleUpdate}>
               <div className="profile-form-row">
-                <label htmlFor="name" className="profile-label">
-                  Name
-                </label>
+                <label htmlFor="name" className="profile-label">Name</label>
                 <input
                   id="name"
                   name="name"
@@ -272,9 +271,7 @@ const Profile = () => {
               </div>
 
               <div className="profile-form-row">
-                <label htmlFor="email" className="profile-label">
-                  Email
-                </label>
+                <label htmlFor="email" className="profile-label">Email</label>
                 <input
                   id="email"
                   name="email"
@@ -311,11 +308,7 @@ const Profile = () => {
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="profile-save-btn"
-                  disabled={saving}
-                >
+                <button type="submit" className="profile-save-btn" disabled={saving}>
                   {saving ? "Saving..." : "Save"}
                 </button>
               </div>
