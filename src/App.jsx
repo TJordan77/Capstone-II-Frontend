@@ -16,6 +16,7 @@ import NotFound from "./components/NotFound";
 import Dashboard from "./components/Dashboard";
 import CreatorDashboard from "./components/CreatorDashboard";
 import EditHunt from "./components/EditHunt";
+import Profile from "./pages/Profile"; 
 
 import { API_URL, SOCKETS_URL, NODE_ENV } from "./shared";
 import { io } from "socket.io-client";
@@ -167,6 +168,7 @@ const App = () => {
           <Route path="/creator/hunts" element={<CreatorDashboard user={user} />} />
           <Route path="/creator" element={<CreatorDashboard user={user} />} />
           <Route path="/creator/hunt/:id/edit" element={<EditHunt user={user} />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
