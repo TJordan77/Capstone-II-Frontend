@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import "./Dashboards.css";
+import "./Dashboard.css";
 
-export default function Dashboards() {
+export default function Dashboard() {
   return (
     <div className="dashboards-landing">
       <div className="dashboards-shell">
