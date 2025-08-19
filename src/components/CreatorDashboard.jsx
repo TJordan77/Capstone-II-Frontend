@@ -113,6 +113,7 @@ function CreatorDashboard({ user }) {
 
   return (
     <div>
+      <div className="home-bg" style={{ backgroundImage: 'url("/background.png")' }} />
       <h1>Creator Dashboard</h1>
 
       <h2>Create New Hunt</h2>
