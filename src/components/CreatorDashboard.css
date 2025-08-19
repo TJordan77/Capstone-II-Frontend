@@ -144,12 +144,13 @@
 
 /* Hunt card matches teal blocks from mockup */
 .cd-hunt-card{
-  background: var(--card);                 /* #008f84 */
+  background: var(--card) !important;                 /* #008f84 */
   color:var(--ink);
   border-radius:16px;
   padding:18px;
   box-shadow: var(--shadow-md);
   border:1px solid rgba(255,255,255,.08);
+  
 }
 .cd-hunt-title{ font-size:22px; font-weight:800; margin:0 0 8px; }
 .cd-hunt-desc{ margin:0 0 16px; color:var(--muted); font-weight:600; }
