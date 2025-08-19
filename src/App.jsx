@@ -14,6 +14,8 @@ import Leaderboard from "./components/Leaderboard";
 import JoinHunt from "./components/JoinHunt";
 import NotFound from "./components/NotFound";
 import Dashboard from "./components/Dashboard";
+import CreatorDashboard from "./components/CreatorDashboard";
+import EditHunt from "./components/EditHunt";
 
 import { API_URL, SOCKETS_URL, NODE_ENV } from "./shared";
 import { io } from "socket.io-client";
@@ -161,7 +163,9 @@ const App = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/leaderboard/:huntId" element={<Leaderboard />} />
-          <Route path="/play/:huntId/checkpoints/:checkpointId" element={<PlayCheckpoint />} />
+          <Route path="/play/:huntId/checkpoints/:checkpointId" element={<PlayCheckpoint />} />        
+          <Route path="/creator/hunts" element={<CreatorDashboard />} />
+          <Route path="/creator/hunt/:id/edit" element={<EditHunt />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
