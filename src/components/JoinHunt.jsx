@@ -17,10 +17,21 @@ export default function JoinHunt() {
     try {
       setLoading(true);
       await initCsrf();
+
+      // 1) Join by code
       const { data } = await api.post("/hunts/join", { joinCode: code });
-      const { huntId } = data || {};
+      const { huntId, slug } = data || {};
       if (!huntId) throw new Error("Missing huntId");
-      navigate(`/hunts/${huntId}`);
+
+      // 2) Prefer slug if we already got it; otherwise fetch it
+      let targetSlug = slug;
+      if (!targetSlug) {
+        const { data: hunt } = await api.get(`/hunts/${huntId}`);
+        targetSlug = hunt?.slug || null;
+      }
+
+      // 3) Navigate using slug when available (fallback to id)
+      navigate(`/hunts/${targetSlug ?? huntId}`);
     } catch (e) {
       const msg =
         e?.response?.data?.error ||
