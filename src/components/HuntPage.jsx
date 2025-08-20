@@ -4,7 +4,7 @@ import { api, initCsrf } from "../ApiClient";
 import "./HuntPage.css";
 
 export default function HuntPage() {
-  const { id } = useParams();
+  const { id: idOrSlug } = useParams();
   const navigate = useNavigate();
   const [hunt, setHunt] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,9 +15,13 @@ export default function HuntPage() {
 
     (async () => {
       try {
-        const { data } = await api.get(`/hunts/${id}`);
+        const ref = String(idOrSlug || "").trim();
+        if (!ref) throw new Error("Invalid hunt reference");
+        // GET is still split: use numeric-id path or slug path
+        const path = /^\d+$/.test(ref) ? `/hunts/${ref}` : `/hunts/slug/${ref}`;
+        const { data } = await api.get(path);
         if (alive) setHunt(data);
-        localStorage.setItem("lastHuntId", String(id));
+        localStorage.setItem("lastHuntRef", ref);
       } catch (e) {
         if (alive) setError(e?.response?.data?.error || "Failed to load hunt");
       } finally {
@@ -25,18 +29,21 @@ export default function HuntPage() {
       }
     })();
 
-    return () => { alive = false; };
-  }, [id]);
+    return () => {
+      alive = false;
+    };
+  }, [idOrSlug]);
 
   async function handleStart() {
     try {
       await initCsrf();
-      const { data } = await api.post(`/hunts/${id}/join`, {});
+      // POST was unified to accept either id or slug
+      const { data } = await api.post(`/hunts/${idOrSlug}/join`, {});
       if (data?.userHuntId) {
         localStorage.setItem("userHuntId", String(data.userHuntId));
       }
       if (data?.firstCheckpointId) {
-        navigate(`/play/${id}/checkpoints/${data.firstCheckpointId}`);
+        navigate(`/play/${idOrSlug}/checkpoints/${data.firstCheckpointId}`);
       } else {
         alert("No checkpoints found for this hunt.");
       }
