@@ -11,27 +11,24 @@ export default function JoinHunt() {
   async function handleJoin(e) {
     e.preventDefault();
     setErr("");
+
     const code = joinCode.trim().toUpperCase();
-    if (!code) return setErr("Please enter a join code.");
+    if (!code) {
+      setErr("Please enter a join code.");
+      return;
+    }
 
     try {
       setLoading(true);
       await initCsrf();
 
-      // 1) Join by code
+      // Join by code
       const { data } = await api.post("/hunts/join", { joinCode: code });
       const { huntId, slug } = data || {};
       if (!huntId) throw new Error("Missing huntId");
 
-      // 2) Prefer slug if we already got it; otherwise fetch it
-      let targetSlug = slug;
-      if (!targetSlug) {
-        const { data: hunt } = await api.get(`/hunts/${huntId}`);
-        targetSlug = hunt?.slug || null;
-      }
-
-      // 3) Navigate using slug when available (fallback to id)
-      navigate(`/hunts/${targetSlug ?? huntId}`);
+      // Navigate once: prefer slug, fall back to numeric id
+      navigate(`/hunts/${slug ?? huntId}`);
     } catch (e) {
       const msg =
         e?.response?.data?.error ||
@@ -64,10 +61,12 @@ export default function JoinHunt() {
           type="text"
           value={joinCode}
           onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-          placeholder="ABC123"
+          placeholder="ABC123 (e.g., TUTORIAL)"
           maxLength={16}
           style={{ padding: "10px 12px" }}
+          autoFocus
         />
+
         {err && (
           <div
             style={{
@@ -80,9 +79,10 @@ export default function JoinHunt() {
             {err}
           </div>
         )}
+
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !joinCode.trim()}
           style={{ padding: "10px 12px", fontWeight: 600 }}
         >
           {loading ? "Joining..." : "Join Hunt"}
