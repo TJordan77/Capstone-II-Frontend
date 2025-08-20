@@ -168,7 +168,7 @@ const App = () => {
           <Route path="/play/:huntId/checkpoints/:checkpointId" element={<PlayCheckpoint />} />        
           <Route path="/creator/hunts" element={<CreatorDashboard user={user} />} />
           <Route path="/creator" element={<CreatorDashboard user={user} />} />
-          <Route path="/dashboard" element={<PlayerDashboard user={user} />} />
+          <Route path="/player" element={<PlayerDashboard user={user} />} />
           <Route path="/creator/hunt/:id/edit" element={<EditHunt user={user} />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<NotFound />} />
