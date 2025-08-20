@@ -160,7 +160,7 @@ const App = () => {
               )
             }
           />
-          <Route path="/hunts/:id/" element={<HuntPage />} />
+          <Route path="/hunts/:idOrSlug/" element={<HuntPage />} />
           <Route path="/join" element={<JoinHunt />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
