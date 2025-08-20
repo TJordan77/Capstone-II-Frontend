@@ -3,8 +3,16 @@ import { useParams, useNavigate } from "react-router-dom";
 import { api, initCsrf } from "../ApiClient";
 import "./HuntPage.css";
 
+function isNumeric(v) {
+  return typeof v === "string" && /^\d+$/.test(v);
+}
+
 export default function HuntPage() {
-  const { id: idOrSlug } = useParams();
+  // Support multiple param names so routing changes don't break data loading.
+  const params = useParams();
+  const idOrSlug =
+    params.id ?? params.huntId ?? params.idOrSlug ?? params.slug ?? "";
+
   const navigate = useNavigate();
   const [hunt, setHunt] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -14,16 +22,32 @@ export default function HuntPage() {
     let alive = true;
 
     (async () => {
+      setLoading(true);
+      setError("");
+
       try {
         const ref = String(idOrSlug || "").trim();
         if (!ref) throw new Error("Invalid hunt reference");
-        // GET is still split: use numeric-id path or slug path
-        const path = /^\d+$/.test(ref) ? `/hunts/${ref}` : `/hunts/slug/${ref}`;
-        const { data } = await api.get(path);
-        if (alive) setHunt(data);
+
+        // Choose endpoint by whether the ref is numeric or a slug
+        const path = isNumeric(ref) ? `/hunts/${ref}` : `/hunts/slug/${ref}`;
+
+        const res = await api.get(path);
+        if (!alive) return;
+
+        if (!res || typeof res.data !== "object") {
+          throw new Error("Bad response (not JSON)");
+        }
+
+        setHunt(res.data);
         localStorage.setItem("lastHuntRef", ref);
       } catch (e) {
-        if (alive) setError(e?.response?.data?.error || "Failed to load hunt");
+        if (!alive) return;
+        const msg =
+          e?.response?.data?.error ||
+          e?.message ||
+          "Failed to load hunt";
+        setError(msg);
       } finally {
         if (alive) setLoading(false);
       }
@@ -36,14 +60,18 @@ export default function HuntPage() {
 
   async function handleStart() {
     try {
-      await initCsrf();
-      // POST was unified to accept either id or slug
-      const { data } = await api.post(`/hunts/${idOrSlug}/join`, {});
+      await initCsrf(); // ensures CSRF cookie/header are set
+      const ref = String(idOrSlug || "").trim();
+      if (!ref) throw new Error("Invalid hunt reference");
+
+      // Backend accepts either id or slug here
+      const { data } = await api.post(`/hunts/${ref}/join`, {});
       if (data?.userHuntId) {
         localStorage.setItem("userHuntId", String(data.userHuntId));
       }
+
       if (data?.firstCheckpointId) {
-        navigate(`/play/${idOrSlug}/checkpoints/${data.firstCheckpointId}`);
+        navigate(`/play/${ref}/checkpoints/${data.firstCheckpointId}`);
       } else {
         alert("No checkpoints found for this hunt.");
       }
@@ -85,7 +113,9 @@ export default function HuntPage() {
         </ol>
 
         <div className="cta-row">
-          <button className="btn primary" onClick={handleStart}>Start hunt</button>
+          <button className="btn primary" onClick={handleStart}>
+            Start hunt
+          </button>
         </div>
       </div>
     </div>
