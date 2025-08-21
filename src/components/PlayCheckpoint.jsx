@@ -1,210 +1,182 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api, initCsrf } from "../ApiClient";
 
-export default function PlayCheckpoint() {
-  const { huntId, checkpointId } = useParams(); // e.x., /play/:huntId/checkpoints/:checkpointId
+export default function Play() {
+  const { idOrSlug, checkpointId } = useParams();
   const navigate = useNavigate();
 
   const [answer, setAnswer] = useState("");
-  const [coords, setCoords] = useState({ lat: null, lng: null });
-  const [geoErr, setGeoErr] = useState("");
+  const [lat, setLat] = useState(null);
+  const [lng, setLng] = useState(null);
+  const [gpsErr, setGpsErr] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState(null); // { wasCorrect, attemptsUsed, attemptsRemaining }
-  const [error, setError] = useState("");
+  const [status, setStatus] = useState("");
 
-  // load checkpoint details for title/riddle display
-  const [checkpoint, setCheckpoint] = useState(null);
+  const joined =
+    !!localStorage.getItem("userHuntId") ||
+    localStorage.getItem(`joined:hunt:${idOrSlug}`) === "1";
 
-  // replace this with the real userHuntId we get after the player joins a hunt
-  const [userHuntId, setUserHuntId] = useState(() => {
-    // If we already have it in auth/store, pull from there instead.
-    const fromStorage = localStorage.getItem("userHuntId");
-    return fromStorage ? Number(fromStorage) : null;
-  });
-
-  // Get current location (one-shot)
-  const getLocation = () => {
-    setGeoErr("");
+  // Get a location fix
+  const watcher = useRef(null);
+  function startWatch() {
+    setGpsErr("");
     if (!("geolocation" in navigator)) {
-      setGeoErr("Geolocation is not supported by this browser.");
+      setGpsErr("Geolocation not supported on this device.");
       return;
     }
-    navigator.geolocation.getCurrentPosition(
+    watcher.current = navigator.geolocation.watchPosition(
       (pos) => {
-        setCoords({
-          lat: Number(pos.coords.latitude.toFixed(6)),
-          lng: Number(pos.coords.longitude.toFixed(6)),
-        });
+        setLat(pos.coords.latitude);
+        setLng(pos.coords.longitude);
       },
       (err) => {
-        setGeoErr(err?.message || "Failed to get your location.");
+        setGpsErr(err.message || "Failed to fetch location.");
       },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
     );
-  };
+  }
+  function stopWatch() {
+    if (watcher.current) {
+      navigator.geolocation.clearWatch(watcher.current);
+      watcher.current = null;
+    }
+  }
 
   useEffect(() => {
-    getLocation(); // grab location on mount
-  }, []);
+    startWatch();
+    return stopWatch;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idOrSlug, checkpointId]);
 
-  // auto-join the hunt if we don't have a userHuntId yet
-  useEffect(() => {
-    (async () => {
-      try {
-        if (!userHuntId) {
-          await initCsrf(); // ensure CSRF cookie
-          const { data } = await api.post(`/hunts/${huntId}/join`, {});
-          if (data?.userHuntId) {
-            localStorage.setItem("userHuntId", String(data.userHuntId));
-            setUserHuntId(Number(data.userHuntId));
-          }
-        }
-      } catch (e) {
-        // non-blocking: user might not be logged in yet; submission will guard
-        console.warn("join failed (non-blocking):", e?.response?.data || e?.message);
-      }
-    })();
-  }, [huntId, userHuntId]);
-
-  // load the hunt to get this checkpoint's title/riddle
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const { data } = await api.get(`/hunts/${huntId}`);
-        const cp = (data?.checkpoints || []).find((c) => String(c.id) === String(checkpointId));
-        if (!cp) throw new Error("Checkpoint not found");
-        if (alive) setCheckpoint(cp);
-      } catch (e) {
-        if (alive) setError(e?.response?.data?.error || e.message || "Failed to load checkpoint");
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [huntId, checkpointId]);
-
-  async function submitAttempt(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    setError("");
-    setResult(null);
-
-    if (!userHuntId) {
-      setError("You must join this hunt before attempting checkpoints.");
-      return;
-    }
+    setStatus("");
     if (!answer.trim()) {
-      setError("Please enter an answer.");
+      setStatus("Please enter an answer.");
       return;
     }
-    if (coords.lat == null || coords.lng == null) {
-      setError("We need your location to verify proximity.");
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      setStatus("Waiting for GPS fix… tap Retry GPS.");
       return;
     }
 
     try {
       setSubmitting(true);
-      await initCsrf(); // fetch CSRF token if not already set
-      const { data } = await api.post(`/play/checkpoints/${checkpointId}/attempt`, {
-        userHuntId,
+      await initCsrf();
+
+      const payload = {
         answer: answer.trim(),
-        // align with backend: use attemptLat/attemptLng
-        attemptLat: coords.lat,
-        attemptLng: coords.lng,
-      });
+        lat,
+        lng,
+        userHuntId: localStorage.getItem("userHuntId") || null,
+        huntRef: idOrSlug,
+      };
 
-      setResult({
-        wasCorrect: !!data?.wasCorrect,
-        attemptsUsed: data?.attemptsUsed ?? null,
-        attemptsRemaining: data?.attemptsRemaining ?? null,
-      });
+      const res = await api.post(
+        `/play/checkpoints/${checkpointId}/attempt`,
+        payload
+      );
 
-      // navigation on success to next checkpoint or finish
-      if (data?.wasCorrect) {
-        setAnswer("");
-        if (data?.finished) {
-          // replace with a dedicated finish screen if/when you add it
-          navigate(`/hunts/${huntId}`);
-        } else if (data?.nextCheckpointId) {
-          navigate(`/play/${huntId}/checkpoints/${data.nextCheckpointId}`);
+      const data = res?.data || {};
+      const correct = data.correct ?? data.wasCorrect ?? false;
+
+      if (correct) {
+        setStatus("✅ Correct! Moving to the next checkpoint…");
+        const nextId =
+          data.nextCheckpointId ??
+          data.nextCheckpoint?.id ??
+          data.unlockNextCheckpointId ??
+          null;
+
+        if (nextId) {
+          // tiny pause so users can see success
+          setTimeout(
+            () => navigate(`/play/${idOrSlug}/checkpoints/${nextId}`),
+            650
+          );
         }
+      } else {
+        setStatus(data.message || "❌ Not quite. Try again!");
       }
     } catch (err) {
-      const msg = err?.response?.data?.error || "Submission failed.";
-      setError(msg);
+      const msg =
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to submit attempt.";
+      setStatus(msg);
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <div className="play-wrap" style={{ padding: 16, maxWidth: 720, margin: "0 auto" }}>
-      <h2>{checkpoint?.title || "Checkpoint"}</h2>
-      {checkpoint?.riddle && <p style={{ opacity: 0.95 }}>{checkpoint.riddle}</p>}
+    <div className="play-page">
+      <div className="play-card">
+        <h1 className="play-title">Ready, Set, Start!</h1>
+        <p className="play-sub">
+          You’re already here. Type <strong>ready</strong> to begin your SideQuest.
+          <br />
+          Hunt: <strong>{String(idOrSlug)}</strong> · Checkpoint:{" "}
+          <strong>{String(checkpointId)}</strong>
+        </p>
 
-      <div style={{ opacity: 0.85, marginBottom: 8 }}>
-        Hunt: <code>{huntId || "unknown"}</code> · Checkpoint: <code>{checkpointId}</code>
-      </div>
+        <div className="gps-row">
+          <div className="gps">
+            Location:{" "}
+            {Number.isFinite(lat) && Number.isFinite(lng)
+              ? `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+              : "waiting…"}
+          </div>
+          <button type="button" className="btn ghost" onClick={startWatch}>
+            Retry GPS
+          </button>
+        </div>
+        {gpsErr ? <div className="hint error">{gpsErr}</div> : null}
 
-      <div style={{ margin: "12px 0" }}>
-        <strong>Location:</strong>{" "}
-        {coords.lat != null && coords.lng != null
-          ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`
-          : "Locating…"}
-        <button
-          type="button"
-          onClick={getLocation}
-          className="btn"
-          style={{ marginLeft: 10 }}
-          disabled={submitting}
-        >
-          Retry GPS
-        </button>
-        {geoErr && <div style={{ color: "#ffdddd", marginTop: 6 }}>{geoErr}</div>}
-      </div>
+        {!joined ? (
+          <div className="hint warn">
+            You haven’t started the hunt from its page. You can still attempt;
+            progress tracking may be limited.
+          </div>
+        ) : null}
 
-      <form onSubmit={submitAttempt} style={{ display: "grid", gap: 10 }}>
-        <label>
-          Your Answer
+        <form onSubmit={handleSubmit}>
+          <label className="label" htmlFor="answer">
+            Your Answer
+          </label>
           <input
+            id="answer"
+            type="text"
+            className="input"
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             placeholder="Type your answer"
-            className="input"
-            style={{ width: "100%", padding: "10px 12px", borderRadius: 8 }}
+            disabled={submitting}
+            autoComplete="off"
           />
-        </label>
 
-        <button type="submit" className="btn cta" disabled={submitting}>
-          {submitting ? "Submitting…" : "Submit Attempt"}
-        </button>
-      </form>
+          <button
+            className="btn primary wide"
+            type="submit"
+            disabled={submitting}
+          >
+            {submitting ? "Submitting…" : "Submit Attempt"}
+          </button>
+        </form>
 
-      {error && (
-        <div style={{ marginTop: 12, color: "#ffd6d6", fontWeight: 700 }}>{error}</div>
-      )}
+        {status ? <div className="status">{status}</div> : null}
 
-      {result && (
-        <div
-          style={{
-            marginTop: 14,
-            padding: "10px 12px",
-            borderRadius: 10,
-            background: result.wasCorrect ? "#1e7a46" : "#7a2b2b",
-            color: "white",
-            fontWeight: 800,
-          }}
-        >
-          {result.wasCorrect ? "✅ Correct! " : "❌ Not quite."}
-          {typeof result.attemptsUsed === "number" && (
-            <>
-              {" "}Attempts used: {result.attemptsUsed}
-              {result.attemptsRemaining != null && ` · Remaining: ${result.attemptsRemaining}`}
-            </>
-          )}
-        </div>
-      )}
+        {!joined ? (
+          <div className="footnote">
+            You must join this hunt before attempting checkpoints.{" "}
+            <span style={{ opacity: 0.85 }}>
+              (Tip: tap “Start hunt” on the hunt page — we’ll enable full
+              tracking. You can still try answers here.)
+            </span>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
