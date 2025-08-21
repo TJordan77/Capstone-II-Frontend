@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api, initCsrf } from "../ApiClient";
+/* NEW: lightweight map component */
+import PlayMap from "./PlayMap";
 
 export default function Play() {
   const params = useParams();
@@ -15,6 +17,11 @@ export default function Play() {
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState("");
 
+  /* NEW: checkpoint metadata for title/riddle/map */
+  const [checkpoint, setCheckpoint] = useState(null); // {title,riddle,lat,lng,toleranceRadius,...}
+  const [loadingCp, setLoadingCp] = useState(true);
+  const [cpErr, setCpErr] = useState("");
+
   const joined =
     !!localStorage.getItem("userHuntId") ||
     localStorage.getItem(`joined:hunt:${huntRef}`) === "1";
@@ -22,6 +29,8 @@ export default function Play() {
   // Get a location fix
   const watcher = useRef(null);
   function startWatch() {
+    /* NEW: avoid stacked geolocation watchers on retry */
+    stopWatch();
     setGpsErr("");
     if (!("geolocation" in navigator)) {
       setGpsErr("Geolocation not supported on this device.");
@@ -50,6 +59,31 @@ export default function Play() {
     return stopWatch;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [huntRef, checkpointId]);
+
+  /* NEW: fetch checkpoint details (title/riddle/lat/lng/toleranceRadius) */
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoadingCp(true);
+      setCpErr("");
+      try {
+        await initCsrf();
+        const { data } = await api.get(`/play/checkpoints/${checkpointId}`);
+        if (!alive) return;
+        setCheckpoint(data?.checkpoint || null);
+      } catch (e) {
+        if (!alive) return;
+        const msg =
+          e?.response?.data?.error || e?.message || "Failed to load checkpoint.";
+        setCpErr(msg);
+      } finally {
+        if (alive) setLoadingCp(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [checkpointId]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -97,6 +131,9 @@ export default function Play() {
             () => navigate(`/play/${huntRef}/checkpoints/${nextId}`),
             650
           );
+        } else {
+          // No next checkpoint = finished
+          setStatus("🏁 Hunt complete! Great job.");
         }
       } else {
         setStatus(data.message || "❌ Not quite. Try again!");
@@ -106,7 +143,13 @@ export default function Play() {
         err?.response?.data?.error ||
         err?.message ||
         "Failed to submit attempt.";
-      setStatus(msg);
+      /* Optional: helpful redirect if they somehow lost membership */
+      if (/userHuntId/i.test(msg)) {
+        setStatus("You need to start this hunt from its page first. Taking you there…");
+        setTimeout(() => navigate(`/hunts/${huntRef}`), 900);
+      } else {
+        setStatus(msg);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -115,13 +158,44 @@ export default function Play() {
   return (
     <div className="play-page">
       <div className="play-card">
-        <h1 className="play-title">Ready, Set, Start!</h1>
+        {/* NEW: use checkpoint title/clue when available */}
+        <h1 className="play-title">
+          {checkpoint?.title || "Ready, Set, Start!"}
+        </h1>
         <p className="play-sub">
-          You’re already here. Type <strong>ready</strong> to begin your SideQuest.
+          {loadingCp
+            ? "Loading checkpoint…"
+            : cpErr
+            ? cpErr
+            : checkpoint?.riddle
+            ? checkpoint.riddle
+            : (
+                <>
+                  You’re already here. Type <strong>ready</strong> to begin your
+                  SideQuest.
+                </>
+              )}
           <br />
           Hunt: <strong>{String(huntRef)}</strong> · Checkpoint:{" "}
           <strong>{String(checkpointId)}</strong>
         </p>
+
+        {/* NEW: live map with user + checkpoint + tolerance circle */}
+        <div className="map-wrap" style={{ margin: "12px 0 18px" }}>
+          <PlayMap
+            userPos={
+              Number.isFinite(lat) && Number.isFinite(lng)
+                ? { lat, lng }
+                : null
+            }
+            checkpointPos={
+              checkpoint?.lat && checkpoint?.lng
+                ? { lat: checkpoint.lat, lng: checkpoint.lng }
+                : null
+            }
+            radius={checkpoint?.toleranceRadius ?? 25}
+          />
+        </div>
 
         <div className="gps-row">
           <div className="gps">
