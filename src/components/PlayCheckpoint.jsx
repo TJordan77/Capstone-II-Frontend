@@ -3,7 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { api, initCsrf } from "../ApiClient";
 
 export default function Play() {
-  const { idOrSlug, checkpointId } = useParams();
+  const params = useParams();
+  const checkpointId = params.checkpointId;
+  const huntRef = params.idOrSlug || params.huntId || params.slug || params.id;
   const navigate = useNavigate();
 
   const [answer, setAnswer] = useState("");
@@ -15,7 +17,7 @@ export default function Play() {
 
   const joined =
     !!localStorage.getItem("userHuntId") ||
-    localStorage.getItem(`joined:hunt:${idOrSlug}`) === "1";
+    localStorage.getItem(`joined:hunt:${huntRef}`) === "1";
 
   // Get a location fix
   const watcher = useRef(null);
@@ -47,7 +49,7 @@ export default function Play() {
     startWatch();
     return stopWatch;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idOrSlug, checkpointId]);
+  }, [huntRef, checkpointId]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -70,7 +72,7 @@ export default function Play() {
         lat,
         lng,
         userHuntId: localStorage.getItem("userHuntId") || null,
-        huntRef: idOrSlug,
+        huntRef: huntRef,
       };
 
       const res = await api.post(
@@ -92,7 +94,7 @@ export default function Play() {
         if (nextId) {
           // tiny pause so users can see success
           setTimeout(
-            () => navigate(`/play/${idOrSlug}/checkpoints/${nextId}`),
+            () => navigate(`/play/${huntRef}/checkpoints/${nextId}`),
             650
           );
         }
@@ -117,7 +119,7 @@ export default function Play() {
         <p className="play-sub">
           You’re already here. Type <strong>ready</strong> to begin your SideQuest.
           <br />
-          Hunt: <strong>{String(idOrSlug)}</strong> · Checkpoint:{" "}
+          Hunt: <strong>{String(huntRef)}</strong> · Checkpoint:{" "}
           <strong>{String(checkpointId)}</strong>
         </p>
 
