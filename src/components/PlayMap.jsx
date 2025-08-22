@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Circle, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
-/* Basic icons; swap to custom pins later if you want */
+/* Basic icons; swap to custom pins later */
 const userIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconSize: [25, 41],
