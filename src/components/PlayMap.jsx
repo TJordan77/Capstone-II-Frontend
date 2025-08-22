@@ -17,6 +17,13 @@ const cpIcon = new L.Icon({
   popupAnchor: [1, -34],
 });
 
+/* Distinct user dot (divIcon) so it doesn't look like a second checkpoint */
+const userDotIcon = L.divIcon({
+  className: "user-dot",
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+});
+
 function FitBounds({ userPos, checkpointPos }) {
   const map = useMap();
   useEffect(() => {
@@ -43,13 +50,28 @@ export default function PlayMap({ userPos, checkpointPos, radius = 25 }) {
         attribution="&copy; OpenStreetMap"
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+
       {checkpointPos && (
         <>
           <Marker position={[checkpointPos.lat, checkpointPos.lng]} icon={cpIcon} />
           <Circle center={[checkpointPos.lat, checkpointPos.lng]} radius={Number(radius) || 25} />
         </>
       )}
-      {userPos && <Marker position={[userPos.lat, userPos.lng]} icon={userIcon} />}
+
+      {/* User shown as a pulsing dot + optional accuracy circle (if provided) */}
+      {userPos && (
+        <>
+          {Number.isFinite(userPos.accuracy) && userPos.accuracy > 0 && (
+            <Circle
+              center={[userPos.lat, userPos.lng]}
+              radius={userPos.accuracy}
+              pathOptions={{ color: "#2a9df4", weight: 1, fillOpacity: 0.08 }}
+            />
+          )}
+          <Marker position={[userPos.lat, userPos.lng]} icon={userDotIcon} />
+        </>
+      )}
+
       <FitBounds userPos={userPos} checkpointPos={checkpointPos} />
     </MapContainer>
   );
