@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api, initCsrf } from "../ApiClient";
+import "./PlayCheckpoint.css";
 /* NEW: lightweight map component */
 import PlayMap from "./PlayMap";
 
