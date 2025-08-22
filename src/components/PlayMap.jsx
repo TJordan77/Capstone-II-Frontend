@@ -17,13 +17,6 @@ const cpIcon = new L.Icon({
   popupAnchor: [1, -34],
 });
 
-/* Distinct user dot (divIcon) so it doesn't look like a second checkpoint */
-const userDotIcon = L.divIcon({
-  className: "user-dot",
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
-});
-
 function FitBounds({ userPos, checkpointPos }) {
   const map = useMap();
   useEffect(() => {
@@ -37,41 +30,59 @@ function FitBounds({ userPos, checkpointPos }) {
   return null;
 }
 
-export default function PlayMap({ userPos, checkpointPos, radius = 25 }) {
-  const center = checkpointPos || userPos || { lat: 40.7128, lng: -74.006 };
+/**
+ * Renders a map ONLY when we have a center (checkpoint OR user).
+ * - No default fallback center.
+ * - Shows one checkpoint pin (if provided) and one user pin (if provided).
+ */
+export default function PlayMap({ userPos, checkpointPos, radius = 25, style }) {
+  // Decide center: prefer checkpoint (if set), else user
+  const center = checkpointPos || userPos || null;
+
+  if (!center) {
+    // No GPS yet and no checkpoint: show a lightweight placeholder
+    return (
+      <div
+        style={{
+          width: "100%",
+          height: 280,
+          borderRadius: 12,
+          overflow: "hidden",
+          display: "grid",
+          placeItems: "center",
+          background:
+            "repeating-linear-gradient(45deg, #f3f4f6, #f3f4f6 10px, #eef0f3 10px, #eef0f3 20px)",
+          ...style,
+        }}
+      >
+        <span style={{ color: "#6b7280", fontSize: 14 }}>
+          Waiting for GPS…
+        </span>
+      </div>
+    );
+  }
+
   return (
     <MapContainer
       center={[center.lat, center.lng]}
       zoom={15}
-      style={{ width: "100%", height: 280, borderRadius: 12, overflow: "hidden" }}
+      style={{ width: "100%", height: 280, borderRadius: 12, overflow: "hidden", ...style }}
       scrollWheelZoom={false}
     >
       <TileLayer
         attribution="&copy; OpenStreetMap"
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-
       {checkpointPos && (
         <>
           <Marker position={[checkpointPos.lat, checkpointPos.lng]} icon={cpIcon} />
-          <Circle center={[checkpointPos.lat, checkpointPos.lng]} radius={Number(radius) || 25} />
+          <Circle
+            center={[checkpointPos.lat, checkpointPos.lng]}
+            radius={Number(radius) || 25}
+          />
         </>
       )}
-
-      {/* User shown as a pulsing dot + optional accuracy circle (if provided) */}
-      {userPos && (
-        <>
-          {Number.isFinite(userPos.accuracy) && userPos.accuracy > 0 && (
-            <Circle
-              center={[userPos.lat, userPos.lng]}
-              radius={userPos.accuracy}
-              pathOptions={{ color: "#2a9df4", weight: 1, fillOpacity: 0.08 }}
-            />
-          )}
-          <Marker position={[userPos.lat, userPos.lng]} icon={userDotIcon} />
-        </>
-      )}
-
+      {userPos && <Marker position={[userPos.lat, userPos.lng]} icon={userIcon} />}
       <FitBounds userPos={userPos} checkpointPos={checkpointPos} />
     </MapContainer>
   );
