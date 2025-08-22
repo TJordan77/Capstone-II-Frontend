@@ -21,18 +21,38 @@ export default function Play() {
   const [totalCheckpoints, setTotalCheckpoints] = useState(null);
 
   /* NEW: checkpoint metadata for title/riddle/map */
-  const [checkpoint, setCheckpoint] = useState(null); // {title,riddle,lat,lng,toleranceRadius,...}
+  const [checkpoint, setCheckpoint] = useState(null); // {title,riddle,lat,lng,toleranceRadius,order,sequenceIndex,huntId}
   const [loadingCp, setLoadingCp] = useState(true);
   const [cpErr, setCpErr] = useState("");
+
+  /* NEW: distance + anchor UX */
+  const [distMeters, setDistMeters] = useState(null);
+  const [anchoring, setAnchoring] = useState(false);
+  const [anchorErr, setAnchorErr] = useState("");
 
   const joined =
     !!localStorage.getItem("userHuntId") ||
     localStorage.getItem(`joined:hunt:${huntRef}`) === "1";
 
-  // Get a location fix
+  // --- helpers ---
   const watcher = useRef(null);
+
+  // Flat‑earth-ish distance (good for small radii)
+  function metersBetween(lat1, lng1, lat2, lng2) {
+    if (
+      !Number.isFinite(lat1) ||
+      !Number.isFinite(lng1) ||
+      !Number.isFinite(lat2) ||
+      !Number.isFinite(lng2)
+    )
+      return null;
+    const dLat = (lat2 - lat1) * 111_111;
+    const dLng = (lng2 - lng1) * 111_111 * Math.cos((((lat1 + lat2) / 2) * Math.PI) / 180);
+    return Math.sqrt(dLat * dLat + dLng * dLng);
+  }
+
   function startWatch() {
-    /* NEW: avoid stacked geolocation watchers on retry */
+    /* avoid stacked geolocation watchers on retry */
     stopWatch();
     setGpsErr("");
     if (!("geolocation" in navigator)) {
@@ -63,7 +83,7 @@ export default function Play() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [huntRef, checkpointId]);
 
-  /* NEW: fetch checkpoint details (title/riddle/lat/lng/toleranceRadius) */
+  // Load checkpoint details for title/riddle/map
   useEffect(() => {
     let ignore = false;
     setLoadingCp(true);
@@ -83,10 +103,9 @@ export default function Play() {
           setCheckpoint(null);
         } else {
           setCheckpoint(cp);
-          // If backend already supplies these, fast-path them
+          // If backend already provides these, fast‑path them
           if (cp.huntTitle) setHuntTitle(cp.huntTitle);
-          if (Number.isFinite(cp.checkpointCount))
-            setTotalCheckpoints(cp.checkpointCount);
+          if (Number.isFinite(cp.checkpointCount)) setTotalCheckpoints(cp.checkpointCount);
         }
       } catch (e) {
         setCpErr(e?.response?.data?.error || "Failed to load checkpoint.");
@@ -101,20 +120,15 @@ export default function Play() {
     };
   }, [checkpointId]);
 
-  /* NEW: fetch hunt title / checkpoint count once checkpoint.huntId is known */
+  // Fetch hunt title / checkpoint count once checkpoint.huntId is known
   useEffect(() => {
     let ignore = false;
     (async () => {
-      // Only run when we know which hunt this checkpoint belongs to
       const id = checkpoint?.huntId;
       if (!id) return;
-
       try {
-        // Your app already uses /hunts/:id in HuntPage.jsx
         const res = await api.get(`/hunts/${id}`);
         if (ignore) return;
-
-        // Backend returns either {hunt: {...}} or a flat object; normalize
         const h = res?.data?.hunt ?? res?.data ?? null;
         setHuntTitle(h?.title || "");
         const count =
@@ -123,9 +137,8 @@ export default function Play() {
         setTotalCheckpoints(
           typeof count === "number" && Number.isFinite(count) ? count : null
         );
-      } catch (e) {
+      } catch {
         if (ignore) return;
-        // Don’t block page on this—fallbacks will kick in
         setHuntTitle("");
         setTotalCheckpoints(null);
       }
@@ -134,6 +147,71 @@ export default function Play() {
       ignore = true;
     };
   }, [checkpoint?.huntId]);
+
+  // Compute distance from user to checkpoint (for guidance + anchor gating)
+  useEffect(() => {
+    if (!checkpoint?.lat || !checkpoint?.lng) {
+      setDistMeters(null);
+      return;
+    }
+    const d = metersBetween(lat, lng, checkpoint.lat, checkpoint.lng);
+    setDistMeters(Number.isFinite(d) ? Math.round(d) : null);
+  }, [lat, lng, checkpoint?.lat, checkpoint?.lng]);
+
+  // Detect tutorial CP1 only (gate anchoring to that)
+  const isCp1 =
+    (checkpoint?.sequenceIndex ?? checkpoint?.order ?? 0) === 1;
+  const isTutorial =
+    (huntTitle || "").toLowerCase().includes("tutorial") ||
+    String(huntRef || "").toLowerCase().includes("tutorial");
+  const isTutorialFirstCp = isTutorial && isCp1;
+
+  // Anchor CP1 to player's current GPS (idempotent on backend)
+  async function anchorCheckpoint() {
+    setAnchorErr("");
+    if (!isTutorialFirstCp) return;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      setAnchorErr("Need a GPS fix first.");
+      return;
+    }
+    try {
+      setAnchoring(true);
+      await initCsrf();
+      const userHuntId = localStorage.getItem("userHuntId") || null;
+      const res = await api.post(`/play/checkpoints/${checkpoint.id}/anchor`, {
+        lat,
+        lng,
+        userHuntId,
+      });
+      const cp = res?.data?.checkpoint;
+      if (cp && Number.isFinite(cp.lat) && Number.isFinite(cp.lng)) {
+        setCheckpoint((prev) => (prev ? { ...prev, ...cp } : prev));
+        setStatus("✅ Tutorial start anchored to your location.");
+      }
+    } catch (e) {
+      setAnchorErr(e?.response?.data?.error || e?.message || "Failed to anchor.");
+    } finally {
+      setAnchoring(false);
+    }
+  }
+
+  // Optional: auto‑anchor once if the pin is clearly far away
+  const AUTO_ANCHOR_ONCE = true;
+  useEffect(() => {
+    if (!AUTO_ANCHOR_ONCE) return;
+    if (!isTutorialFirstCp) return;
+    if (!Number.isFinite(distMeters)) return;
+    if (distMeters < 500) return; // close enough, don't auto‑anchor
+    // Only auto‑anchor if the checkpoint has no coords or is obviously defaulted
+    const looksUnset =
+      !Number.isFinite(checkpoint?.lat) ||
+      !Number.isFinite(checkpoint?.lng) ||
+      (Math.abs(checkpoint?.lat) < 1e-6 && Math.abs(checkpoint?.lng) < 1e-6);
+    if (looksUnset || distMeters > 1000) {
+      anchorCheckpoint();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTutorialFirstCp, distMeters]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -176,13 +254,11 @@ export default function Play() {
           null;
 
         if (nextId) {
-          // tiny pause so users can see success
           setTimeout(
             () => navigate(`/play/${huntRef}/checkpoints/${nextId}`),
             650
           );
         } else {
-          // No next checkpoint = finished
           setStatus("🏁 Hunt complete! Great job.");
         }
       } else {
@@ -193,7 +269,6 @@ export default function Play() {
         err?.response?.data?.error ||
         err?.message ||
         "Failed to submit attempt.";
-      /* Optional: helpful redirect if they somehow lost membership */
       if (/userHuntId/i.test(msg)) {
         setStatus(
           "You need to start this hunt from its page first. Taking you there…"
@@ -232,7 +307,7 @@ export default function Play() {
           <strong>
             {checkpoint?.sequenceIndex ??
               checkpoint?.order ??
-              Number(checkpointId) /* last‑ditch fallback */}
+              Number(checkpointId)}
           </strong>
           {typeof totalCheckpoints === "number"
             ? ` of ${totalCheckpoints}`
@@ -252,22 +327,40 @@ export default function Play() {
                 ? { lat: checkpoint.lat, lng: checkpoint.lng }
                 : null
             }
-            radius={checkpoint?.toleranceRadius ?? 25}
+            radius={checkpoint?.toleranceRadius ?? checkpoint?.tolerance ?? 25}
           />
         </div>
 
-        <div className="gps-row">
+        <div className="gps-row" style={{ alignItems: "center", gap: 12 }}>
           <div className="gps">
             Location:{" "}
             {Number.isFinite(lat) && Number.isFinite(lng)
               ? `${lat.toFixed(5)}, ${lng.toFixed(5)}`
               : "waiting…"}
+            {Number.isFinite(distMeters) && checkpoint?.lat && checkpoint?.lng
+              ? ` · You are ~${distMeters}m away`
+              : ""}
           </div>
+
           <button type="button" className="btn ghost" onClick={startWatch}>
             Retry GPS
           </button>
+
+          {/* Show anchor button only for Tutorial CP1 and when clearly far */}
+          {isTutorialFirstCp && Number.isFinite(distMeters) && distMeters > 200 && (
+            <button
+              type="button"
+              className="btn"
+              onClick={anchorCheckpoint}
+              disabled={anchoring || !Number.isFinite(lat) || !Number.isFinite(lng)}
+              title="Set the tutorial start to your current location"
+            >
+              {anchoring ? "Anchoring…" : "Anchor to my location"}
+            </button>
+          )}
         </div>
         {gpsErr ? <div className="hint error">{gpsErr}</div> : null}
+        {anchorErr ? <div className="hint error">{anchorErr}</div> : null}
 
         {!joined ? (
           <div className="hint warn">
@@ -291,7 +384,7 @@ export default function Play() {
             autoComplete="off"
           />
 
-        <button
+          <button
             className="btn primary wide"
             type="submit"
             disabled={submitting}
