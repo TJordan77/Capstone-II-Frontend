@@ -17,6 +17,8 @@ export default function Play() {
   const [gpsErr, setGpsErr] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState("");
+  const [huntTitle, setHuntTitle] = useState("");
+  const [totalCheckpoints, setTotalCheckpoints] = useState(null);
 
   /* NEW: checkpoint metadata for title/riddle/map */
   const [checkpoint, setCheckpoint] = useState(null); // {title,riddle,lat,lng,toleranceRadius,...}
@@ -63,28 +65,37 @@ export default function Play() {
 
   /* NEW: fetch checkpoint details (title/riddle/lat/lng/toleranceRadius) */
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      setLoadingCp(true);
-      setCpErr("");
-      try {
-        await initCsrf();
-        const { data } = await api.get(`/play/checkpoints/${checkpointId}`);
-        if (!alive) return;
-        setCheckpoint(data?.checkpoint || null);
-      } catch (e) {
-        if (!alive) return;
-        const msg =
-          e?.response?.data?.error || e?.message || "Failed to load checkpoint.";
-        setCpErr(msg);
-      } finally {
-        if (alive) setLoadingCp(false);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [checkpointId]);
+  let ignore = false;
+  (async () => {
+    // Only run when we know which hunt this checkpoint belongs to
+    const id = checkpoint?.huntId;
+    if (!id) return;
+
+    try {
+      // Your app already uses /hunts/:id in HuntPage.jsx
+      const res = await api.get(`/hunts/${id}`);
+      if (ignore) return;
+
+      // Backend returns either {hunt: {...}} or a flat object; normalize
+      const h = res?.data?.hunt ?? res?.data ?? null;
+      setHuntTitle(h?.title || "");
+      const count =
+        h?.checkpointCount ??
+        (Array.isArray(h?.checkpoints) ? h.checkpoints.length : null);
+      setTotalCheckpoints(
+        typeof count === "number" && Number.isFinite(count) ? count : null
+      );
+    } catch (e) {
+      if (ignore) return;
+      // Don’t block page on this—fallbacks will kick in
+      setHuntTitle("");
+      setTotalCheckpoints(null);
+    }
+  })();
+  return () => {
+    ignore = true;
+  };
+}, [checkpoint?.huntId]);
 
   async function handleSubmit(e) {
     e.preventDefault();
