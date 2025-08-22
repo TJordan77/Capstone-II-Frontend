@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api, initCsrf } from "../ApiClient";
 import "./PlayCheckpoint.css";
-/* NEW: lightweight map component */
+/* Map component */
 import PlayMap from "./PlayMap";
 
 export default function Play() {
@@ -20,12 +20,12 @@ export default function Play() {
   const [huntTitle, setHuntTitle] = useState("");
   const [totalCheckpoints, setTotalCheckpoints] = useState(null);
 
-  /* checkpoint metadata for title/riddle/map */
+  // checkpoint metadata for title/riddle/map
   const [checkpoint, setCheckpoint] = useState(null); // {id,title,riddle,lat,lng,toleranceRadius,order,sequenceIndex,huntId}
   const [loadingCp, setLoadingCp] = useState(true);
   const [cpErr, setCpErr] = useState("");
 
-  /* distance + anchor UX */
+  // distance + anchor UX
   const [distMeters, setDistMeters] = useState(null);
   const [anchoring, setAnchoring] = useState(false);
   const [anchorErr, setAnchorErr] = useState("");
@@ -37,6 +37,7 @@ export default function Play() {
   // --- helpers ---
   const watcher = useRef(null);
 
+  // Flat-earth distance (fine for small radii)
   function metersBetween(lat1, lng1, lat2, lng2) {
     if (
       !Number.isFinite(lat1) ||
@@ -196,17 +197,17 @@ export default function Play() {
     }
   }
 
-  // Auto‑anchor once when: tutorial CP1 AND checkpoint has no coords AND we have a GPS fix
+  // Auto‑anchor once if: tutorial CP1 AND (coords missing OR distance > 1000m) AND we have a GPS fix
   useEffect(() => {
     if (!isTutorialFirstCp) return;
     const noCoords =
       !Number.isFinite(checkpoint?.lat) || !Number.isFinite(checkpoint?.lng);
-    if (!noCoords) return; // already anchored
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return; // no GPS yet
-    // try to anchor once
-    anchorCheckpoint();
+    if (noCoords || (Number.isFinite(distMeters) && distMeters > 1000)) {
+      anchorCheckpoint();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isTutorialFirstCp, checkpoint?.lat, checkpoint?.lng, lat, lng]);
+  }, [isTutorialFirstCp, checkpoint?.lat, checkpoint?.lng, lat, lng, distMeters]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -309,7 +310,7 @@ export default function Play() {
             : ""}
         </p>
 
-        {/* live map with user + checkpoint + tolerance circle (only when we have a center) */}
+        {/* Map only renders when we have a real center (user or checkpoint). No defaults. */}
         <div className="map-wrap" style={{ margin: "12px 0 18px" }}>
           <PlayMap
             userPos={
@@ -322,7 +323,7 @@ export default function Play() {
                 ? { lat: checkpoint.lat, lng: checkpoint.lng }
                 : null
             }
-            radius={checkpoint?.toleranceRadius ?? checkpoint?.tolerance ?? 25}
+            radius={checkpoint?.toleranceRadius ?? checkpoint?.tolerance ?? 35}
           />
         </div>
 
@@ -341,10 +342,12 @@ export default function Play() {
             Retry GPS
           </button>
 
-          {/* Show anchor if tutorial CP1 has no coords yet and we have a GPS fix */}
+          {/* Anchor button for Tutorial CP1 when coords missing OR far away */}
           {isTutorialFirstCp &&
-            (!Number.isFinite(checkpoint?.lat) ||
-              !Number.isFinite(checkpoint?.lng)) && (
+            (
+              (!Number.isFinite(checkpoint?.lat) || !Number.isFinite(checkpoint?.lng)) ||
+              (Number.isFinite(distMeters) && distMeters > 200)
+            ) && (
               <button
                 type="button"
                 className="btn"
