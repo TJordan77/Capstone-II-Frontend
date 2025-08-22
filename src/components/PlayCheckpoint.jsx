@@ -160,18 +160,15 @@ export default function Play() {
     setDistMeters(Number.isFinite(d) ? Math.round(d) : null);
   }, [lat, lng, checkpoint?.lat, checkpoint?.lng]);
 
-  // Detect tutorial CP1
-  const seqOrOrder = checkpoint?.sequenceIndex ?? checkpoint?.order ?? 0;
-  const isCp1 = seqOrOrder === 1;
+  // Tutorial detection (for any CP in the tutorial hunt)
   const isTutorial =
     (huntTitle || "").toLowerCase().includes("tutorial") ||
     String(huntRef || "").toLowerCase().includes("tutorial");
-  const isTutorialFirstCp = isTutorial && isCp1;
 
-  // Anchor CP1 to player's current GPS (idempotent on backend)
-  async function anchorCheckpoint() {
+  // Anchor to player's current GPS (works for any tutorial CP; backend re-bases neighbors when far)
+  async function anchorCheckpoint({ force = false, forceNeighbors = true } = {}) {
     setAnchorErr("");
-    if (!isTutorialFirstCp) return;
+    if (!isTutorial) return;
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       setAnchorErr("Need a GPS fix first.");
       return;
@@ -184,11 +181,13 @@ export default function Play() {
         lat,
         lng,
         userHuntId,
+        force,
+        forceNeighbors, // let backend rebase CP2/CP3 too when far
       });
       const cp = res?.data?.checkpoint;
       if (cp && Number.isFinite(cp.lat) && Number.isFinite(cp.lng)) {
         setCheckpoint((prev) => (prev ? { ...prev, ...cp } : prev));
-        setStatus("✅ Tutorial start anchored to your location.");
+        setStatus("✅ Tutorial anchored to your location.");
       }
     } catch (e) {
       setAnchorErr(e?.response?.data?.error || e?.message || "Failed to anchor.");
@@ -197,17 +196,17 @@ export default function Play() {
     }
   }
 
-  // Auto‑anchor once if: tutorial CP1 AND (coords missing OR distance > 1000m) AND we have a GPS fix
+  // Auto‑anchor once if: tutorial AND (coords missing OR distance > 1000m) AND we have a GPS fix
   useEffect(() => {
-    if (!isTutorialFirstCp) return;
+    if (!isTutorial) return;
     const noCoords =
       !Number.isFinite(checkpoint?.lat) || !Number.isFinite(checkpoint?.lng);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return; // no GPS yet
     if (noCoords || (Number.isFinite(distMeters) && distMeters > 1000)) {
-      anchorCheckpoint();
+      anchorCheckpoint({ forceNeighbors: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isTutorialFirstCp, checkpoint?.lat, checkpoint?.lng, lat, lng, distMeters]);
+  }, [isTutorial, checkpoint?.lat, checkpoint?.lng, lat, lng, distMeters]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -342,8 +341,8 @@ export default function Play() {
             Retry GPS
           </button>
 
-          {/* Anchor button for Tutorial CP1 when coords missing OR far away */}
-          {isTutorialFirstCp &&
+          {/* Anchor button for ANY Tutorial CP when coords missing OR far away */}
+          {isTutorial &&
             (
               (!Number.isFinite(checkpoint?.lat) || !Number.isFinite(checkpoint?.lng)) ||
               (Number.isFinite(distMeters) && distMeters > 200)
@@ -351,9 +350,9 @@ export default function Play() {
               <button
                 type="button"
                 className="btn"
-                onClick={anchorCheckpoint}
+                onClick={() => anchorCheckpoint({ forceNeighbors: true })}
                 disabled={anchoring || !Number.isFinite(lat) || !Number.isFinite(lng)}
-                title="Set the tutorial start to your current location"
+                title="Snap this tutorial checkpoint (and neighbors) to your current location"
               >
                 {anchoring ? "Anchoring…" : "Anchor to my location"}
               </button>
@@ -384,7 +383,7 @@ export default function Play() {
             autoComplete="off"
           />
 
-          <button
+        <button
             className="btn primary wide"
             type="submit"
             disabled={submitting}
