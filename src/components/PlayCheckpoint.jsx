@@ -65,37 +65,75 @@ export default function Play() {
 
   /* NEW: fetch checkpoint details (title/riddle/lat/lng/toleranceRadius) */
   useEffect(() => {
-  let ignore = false;
-  (async () => {
-    // Only run when we know which hunt this checkpoint belongs to
-    const id = checkpoint?.huntId;
-    if (!id) return;
+    let ignore = false;
+    setLoadingCp(true);
+    setCpErr("");
+    setCheckpoint(null);
 
-    try {
-      // Your app already uses /hunts/:id in HuntPage.jsx
-      const res = await api.get(`/hunts/${id}`);
-      if (ignore) return;
+    (async () => {
+      try {
+        const res = await api.get(`/play/checkpoints/${checkpointId}`);
+        if (ignore) return;
 
-      // Backend returns either {hunt: {...}} or a flat object; normalize
-      const h = res?.data?.hunt ?? res?.data ?? null;
-      setHuntTitle(h?.title || "");
-      const count =
-        h?.checkpointCount ??
-        (Array.isArray(h?.checkpoints) ? h.checkpoints.length : null);
-      setTotalCheckpoints(
-        typeof count === "number" && Number.isFinite(count) ? count : null
-      );
-    } catch (e) {
-      if (ignore) return;
-      // Don’t block page on this—fallbacks will kick in
-      setHuntTitle("");
-      setTotalCheckpoints(null);
-    }
-  })();
-  return () => {
-    ignore = true;
-  };
-}, [checkpoint?.huntId]);
+        const data = res?.data ?? {};
+        const cp = data.checkpoint ?? data;
+
+        if (!cp || !cp.id) {
+          setCpErr("Failed to load checkpoint.");
+          setCheckpoint(null);
+        } else {
+          setCheckpoint(cp);
+          // If backend already supplies these, fast-path them
+          if (cp.huntTitle) setHuntTitle(cp.huntTitle);
+          if (Number.isFinite(cp.checkpointCount))
+            setTotalCheckpoints(cp.checkpointCount);
+        }
+      } catch (e) {
+        setCpErr(e?.response?.data?.error || "Failed to load checkpoint.");
+        setCheckpoint(null);
+      } finally {
+        if (!ignore) setLoadingCp(false);
+      }
+    })();
+
+    return () => {
+      ignore = true;
+    };
+  }, [checkpointId]);
+
+  /* NEW: fetch hunt title / checkpoint count once checkpoint.huntId is known */
+  useEffect(() => {
+    let ignore = false;
+    (async () => {
+      // Only run when we know which hunt this checkpoint belongs to
+      const id = checkpoint?.huntId;
+      if (!id) return;
+
+      try {
+        // Your app already uses /hunts/:id in HuntPage.jsx
+        const res = await api.get(`/hunts/${id}`);
+        if (ignore) return;
+
+        // Backend returns either {hunt: {...}} or a flat object; normalize
+        const h = res?.data?.hunt ?? res?.data ?? null;
+        setHuntTitle(h?.title || "");
+        const count =
+          h?.checkpointCount ??
+          (Array.isArray(h?.checkpoints) ? h.checkpoints.length : null);
+        setTotalCheckpoints(
+          typeof count === "number" && Number.isFinite(count) ? count : null
+        );
+      } catch (e) {
+        if (ignore) return;
+        // Don’t block page on this—fallbacks will kick in
+        setHuntTitle("");
+        setTotalCheckpoints(null);
+      }
+    })();
+    return () => {
+      ignore = true;
+    };
+  }, [checkpoint?.huntId]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -157,7 +195,9 @@ export default function Play() {
         "Failed to submit attempt.";
       /* Optional: helpful redirect if they somehow lost membership */
       if (/userHuntId/i.test(msg)) {
-        setStatus("You need to start this hunt from its page first. Taking you there…");
+        setStatus(
+          "You need to start this hunt from its page first. Taking you there…"
+        );
         setTimeout(() => navigate(`/hunts/${huntRef}`), 900);
       } else {
         setStatus(msg);
@@ -188,8 +228,15 @@ export default function Play() {
                 </>
               )}
           <br />
-          Hunt: <strong>{String(huntRef)}</strong> · Checkpoint:{" "}
-          <strong>{String(checkpointId)}</strong>
+          Hunt: <strong>{huntTitle || String(huntRef)}</strong> · Checkpoint:{" "}
+          <strong>
+            {checkpoint?.sequenceIndex ??
+              checkpoint?.order ??
+              Number(checkpointId) /* last‑ditch fallback */}
+          </strong>
+          {typeof totalCheckpoints === "number"
+            ? ` of ${totalCheckpoints}`
+            : ""}
         </p>
 
         {/* NEW: live map with user + checkpoint + tolerance circle */}
@@ -244,7 +291,7 @@ export default function Play() {
             autoComplete="off"
           />
 
-          <button
+        <button
             className="btn primary wide"
             type="submit"
             disabled={submitting}
