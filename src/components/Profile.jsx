@@ -24,6 +24,7 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({ name: "", email: "" });
   const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef(null);
 
@@ -34,6 +35,8 @@ const Profile = () => {
   useEffect(() => {
     (async () => {
       try {
+        setLoading(true);
+
         const meResp = await api.get("/auth/me");
         const me = meResp?.data?.user || meResp?.data || null;
         if (!me) throw new Error("No user in /auth/me response");
@@ -49,15 +52,24 @@ const Profile = () => {
         });
 
         const userId = me.id;
-        const [createdRes, joinedRes, badgesRes] = await Promise.all([
+
+        // Make profile resilient: if one call 500s, still render the others.
+        const [createdRes, joinedRes, badgesRes] = await Promise.allSettled([
           api.get(`/users/${userId}/hunts/created`),
           api.get(`/users/${userId}/hunts/joined`),
           api.get(`/users/${userId}/badges`),
         ]);
 
-        setCreatedCount(createdRes?.data?.length || 0);
-        setPlayedCount(joinedRes?.data?.length || 0);
-        setBadges(Array.isArray(badgesRes?.data) ? badgesRes.data : []);
+        const created =
+          createdRes.status === "fulfilled" ? createdRes.value?.data : [];
+        const joined =
+          joinedRes.status === "fulfilled" ? joinedRes.value?.data : [];
+        const badgesData =
+          badgesRes.status === "fulfilled" ? badgesRes.value?.data : [];
+
+        setCreatedCount(Array.isArray(created) ? created.length : 0);
+        setPlayedCount(Array.isArray(joined) ? joined.length : 0);
+        setBadges(Array.isArray(badgesData) ? badgesData : []);
       } catch (e) {
         console.error("Failed to load profile:", e);
       } finally {
@@ -85,9 +97,10 @@ const Profile = () => {
   }, [profile]);
 
   const avatarSrc = useMemo(() => {
+    if (avatarFailed) return null;
     if (avatarPreview) return avatarPreview;
     return profile?.profilePicture || profile?.avatarUrl || null;
-  }, [avatarPreview, profile]);
+  }, [avatarPreview, profile, avatarFailed]);
 
   const userInitial = useMemo(() => {
     const name = displayName || profile?.username || "U";
@@ -102,15 +115,16 @@ const Profile = () => {
       src: getBadgeIcon(b),
       alt: b.name,
     }));
-    const placeholders = Array.from({ length: Math.max(0, take - earned.length) }).map(
-      (_, i) => ({ key: `lock-${i}`, locked: true })
-    );
+    const placeholders = Array.from({
+      length: Math.max(0, take - earned.length),
+    }).map((_, i) => ({ key: `lock-${i}`, locked: true }));
     return [...earned, ...placeholders];
   }, [badges]);
 
   const onPickImage = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
+    setAvatarFailed(false);
     const reader = new FileReader();
     reader.onload = (ev) => setAvatarPreview(String(ev.target?.result || ""));
     reader.readAsDataURL(f);
@@ -125,9 +139,25 @@ const Profile = () => {
 
       const { data } = await api.put("/auth/profile", body);
       const updated = data?.user || data;
-      setProfile((p) => ({ ...p, ...updated }));
+
+      setProfile((p) => ({
+        ...p,
+        ...updated,
+      }));
+
+      // Keep form inputs in sync with any server-side normalization.
+      setFormData({
+        name:
+          updated.name ||
+          [updated.firstName, updated.lastName].filter(Boolean).join(" ") ||
+          updated.username ||
+          "",
+        email: updated.email || "",
+      });
+
       setEditing(false);
       setAvatarPreview(null);
+      setAvatarFailed(false);
     } catch (error) {
       console.error("Failed to update profile:", error);
     } finally {
@@ -153,7 +183,6 @@ const Profile = () => {
 
   return (
     <div className="profile-page">
-      {/* Background like Home: inline style so it loads correctly */}
       <div
         className="profile-bg"
         style={{ backgroundImage: 'url("/background.png")' }}
@@ -167,7 +196,11 @@ const Profile = () => {
           <div className="profile-avatar-wrap">
             <div className="profile-avatar">
               {avatarSrc ? (
-                <img src={avatarSrc} alt={displayName} />
+                <img
+                  src={avatarSrc}
+                  alt={displayName}
+                  onError={() => setAvatarFailed(true)}
+                />
               ) : (
                 <div className="profile-avatar-initial">{userInitial}</div>
               )}
@@ -257,7 +290,9 @@ const Profile = () => {
           {editing && (
             <form className="profile-form" onSubmit={handleUpdate}>
               <div className="profile-form-row">
-                <label htmlFor="name" className="profile-label">Name</label>
+                <label htmlFor="name" className="profile-label">
+                  Name
+                </label>
                 <input
                   id="name"
                   name="name"
@@ -271,7 +306,9 @@ const Profile = () => {
               </div>
 
               <div className="profile-form-row">
-                <label htmlFor="email" className="profile-label">Email</label>
+                <label htmlFor="email" className="profile-label">
+                  Email
+                </label>
                 <input
                   id="email"
                   name="email"
@@ -304,6 +341,7 @@ const Profile = () => {
                   onClick={() => {
                     setEditing(false);
                     setAvatarPreview(null);
+                    setAvatarFailed(false);
                   }}
                 >
                   Cancel
