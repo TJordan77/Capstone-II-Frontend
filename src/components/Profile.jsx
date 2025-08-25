@@ -27,7 +27,7 @@ const KNOWN_BADGE_TITLES = {
   7: "Speedrunner",
 };
 
-// 🔧 EDIT: make icon lookup tolerant of bad/empty imageUrl ("/icon-.png")
+// Make icon lookup tolerant of bad/empty imageUrl ("/icon-.png")
 // and fall back to known icons by badge id, then slug(name|title), then generic.
 function getBadgeIcon(badge) {
   const isBad = (u) =>
@@ -116,7 +116,7 @@ const Profile = () => {
                 b.name ??
                 b.Badge?.title ??
                 KNOWN_BADGE_TITLES[id] ??
-                // last-ditch: try to infer from description
+                // Try to infer from description
                 (typeof b.description === "string" &&
                 /first checkpoint/i.test(b.description)
                   ? "Trailblazer"
