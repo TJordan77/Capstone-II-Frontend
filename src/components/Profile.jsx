@@ -17,6 +17,59 @@ function getBadgeIcon(badge) {
   return `/icon-${slug}.png`;
 }
 
+// Normalize various /badges shapes into a consistent structure
+// Accepts either [{ Badge: {...}, earnedAt: ... }] or [{ id, name, imageUrl, ... }] etc.
+function normalizeBadges(rawList = []) {
+  if (!Array.isArray(rawList)) return [];
+  return rawList
+    .map((row) => {
+      const nested = row.Badge || row.badge || null;
+      const src = nested || row;
+
+      const id =
+        src?.id ??
+        row?.badgeId ??
+        row?.id ??
+        null;
+
+      const name =
+        src?.name ??
+        src?.title ??
+        row?.name ??
+        row?.title ??
+        "Badge";
+
+      // Support snake_case from DB or camelCase from API
+      const imageUrl =
+        src?.imageUrl ??
+        src?.image_url ??
+        row?.imageUrl ??
+        row?.image_url ??
+        null;
+
+      const earnedAt =
+        row?.earnedAt ??
+        row?.createdAt ??
+        row?.updatedAt ??
+        null;
+
+      return {
+        id: id != null ? Number(id) : null,
+        name,
+        imageUrl, // May be null; UI will fall back to slug icon
+        earnedAt,
+      };
+    })
+    // Filter out truly empty rows
+    .filter((b) => b.id != null && b.name)
+    // Put most recent first (if timestamps exist)
+    .sort((a, b) => {
+      const ta = a.earnedAt ? new Date(a.earnedAt).getTime() : 0;
+      const tb = b.earnedAt ? new Date(b.earnedAt).getTime() : 0;
+      return tb - ta;
+    });
+}
+
 const Profile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -67,9 +120,12 @@ const Profile = () => {
         const badgesData =
           badgesRes.status === "fulfilled" ? badgesRes.value?.data : [];
 
+        // Normalize earned badges so seeded + runtime both show up
+        const normalizedBadges = normalizeBadges(badgesData);
+
         setCreatedCount(Array.isArray(created) ? created.length : 0);
         setPlayedCount(Array.isArray(joined) ? joined.length : 0);
-        setBadges(Array.isArray(badgesData) ? badgesData : []);
+        setBadges(normalizedBadges);
       } catch (e) {
         console.error("Failed to load profile:", e);
       } finally {
