@@ -27,6 +27,9 @@ const KNOWN_BADGE_TITLES = {
   7: "Speedrunner",
 };
 
+/* Prioritize which badges float to the top row in the profile grid */
+const CORE_ORDER = { 10: 0, 6: 1, 7: 2 }; // Trailblazer, Pathfinder, Speedrunner
+
 // Make icon lookup tolerant of bad/empty imageUrl ("/icon-.png")
 // and fall back to known icons by badge id, then slug(name|title), then generic.
 function getBadgeIcon(badge) {
@@ -177,9 +180,22 @@ const Profile = () => {
     return String(name).trim().charAt(0).toUpperCase();
   }, [displayName, profile]);
 
+  /* Only change: sort so core badges float into the first 6 */
   const topBadges = useMemo(() => {
+    const sorted = [...badges].sort((a, b) => {
+      const ea = a?.earnedAt ? new Date(a.earnedAt).getTime() : 0;
+      const eb = b?.earnedAt ? new Date(b.earnedAt).getTime() : 0;
+      if (ea !== eb) return eb - ea; // newest earned first
+      const pa = CORE_ORDER[a?.id] ?? 999;
+      const pb = CORE_ORDER[b?.id] ?? 999;
+      if (pa !== pb) return pa - pb; // core priority
+      return String(a?.title || a?.name || "").localeCompare(
+        String(b?.title || b?.name || "")
+      );
+    });
+
     const take = 6;
-    const earned = badges.slice(0, take).map((b) => ({
+    const earned = sorted.slice(0, take).map((b) => ({
       key: `b-${b.id}-${b.earnedAt || ""}`,
       locked: false,
       src: getBadgeIcon(b),
