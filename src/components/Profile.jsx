@@ -11,63 +11,12 @@ function slugifyName(name = "") {
     .replace(/(^-|-$)/g, "");
 }
 
+// Make icon lookup tolerate both imageUrl and image; fall back to slug(name|title)
 function getBadgeIcon(badge) {
   if (badge?.imageUrl) return badge.imageUrl;
-  const slug = slugifyName(badge?.name || "");
-  return `/icon-${slug}.png`;
-}
-
-// Normalize various /badges shapes into a consistent structure
-// Accepts either [{ Badge: {...}, earnedAt: ... }] or [{ id, name, imageUrl, ... }] etc.
-function normalizeBadges(rawList = []) {
-  if (!Array.isArray(rawList)) return [];
-  return rawList
-    .map((row) => {
-      const nested = row.Badge || row.badge || null;
-      const src = nested || row;
-
-      const id =
-        src?.id ??
-        row?.badgeId ??
-        row?.id ??
-        null;
-
-      const name =
-        src?.name ??
-        src?.title ??
-        row?.name ??
-        row?.title ??
-        "Badge";
-
-      // Support snake_case from DB or camelCase from API
-      const imageUrl =
-        src?.imageUrl ??
-        src?.image_url ??
-        row?.imageUrl ??
-        row?.image_url ??
-        null;
-
-      const earnedAt =
-        row?.earnedAt ??
-        row?.createdAt ??
-        row?.updatedAt ??
-        null;
-
-      return {
-        id: id != null ? Number(id) : null,
-        name,
-        imageUrl, // May be null; UI will fall back to slug icon
-        earnedAt,
-      };
-    })
-    // Filter out truly empty rows
-    .filter((b) => b.id != null && b.name)
-    // Put most recent first (if timestamps exist)
-    .sort((a, b) => {
-      const ta = a.earnedAt ? new Date(a.earnedAt).getTime() : 0;
-      const tb = b.earnedAt ? new Date(b.earnedAt).getTime() : 0;
-      return tb - ta;
-    });
+  if (badge?.image) return badge.image;
+  const slug = slugifyName(badge?.name || badge?.title || "");
+  return slug ? `/icon-${slug}.png` : "/icon-badges.png";
 }
 
 const Profile = () => {
@@ -117,14 +66,39 @@ const Profile = () => {
           createdRes.status === "fulfilled" ? createdRes.value?.data : [];
         const joined =
           joinedRes.status === "fulfilled" ? joinedRes.value?.data : [];
-        const badgesData =
+        const badgesRaw =
           badgesRes.status === "fulfilled" ? badgesRes.value?.data : [];
-
-        // Normalize earned badges so seeded + runtime both show up
-        const normalizedBadges = normalizeBadges(badgesData);
 
         setCreatedCount(Array.isArray(created) ? created.length : 0);
         setPlayedCount(Array.isArray(joined) ? joined.length : 0);
+
+        // Normalize badge shape from backend (snake_case/camel, title/image, etc.)
+        const normalizedBadges = Array.isArray(badgesRaw)
+          ? badgesRaw.map((b) => {
+              const badgeObj = {
+                id:
+                  b.id ??
+                  b.badgeId ??
+                  b.badge_id ??
+                  b.BadgeId ??
+                  b.Badge?.id ??
+                  null,
+                name: b.name ?? b.title ?? b.Badge?.title ?? "Badge",
+                title: b.title ?? b.name ?? b.Badge?.title ?? "Badge",
+                imageUrl: b.imageUrl ?? b.image ?? b.Badge?.image ?? null,
+                image: b.image ?? b.imageUrl ?? b.Badge?.image ?? null,
+                earnedAt:
+                  b.earnedAt ??
+                  b.earned_at ??
+                  b.UserBadge?.earnedAt ??
+                  b.user_badge?.earned_at ??
+                  b.userBadge?.earnedAt ??
+                  null,
+              };
+              return badgeObj;
+            })
+          : [];
+
         setBadges(normalizedBadges);
       } catch (e) {
         console.error("Failed to load profile:", e);
@@ -163,13 +137,14 @@ const Profile = () => {
     return String(name).trim().charAt(0).toUpperCase();
   }, [displayName, profile]);
 
+  // Prefer b.name || b.title and tolerate earnedAt vs earned_at
   const topBadges = useMemo(() => {
     const take = 6;
     const earned = badges.slice(0, take).map((b) => ({
       key: `b-${b.id}-${b.earnedAt || ""}`,
       locked: false,
       src: getBadgeIcon(b),
-      alt: b.name,
+      alt: b.name || b.title || "Badge",
     }));
     const placeholders = Array.from({
       length: Math.max(0, take - earned.length),
