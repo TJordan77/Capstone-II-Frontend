@@ -11,10 +11,38 @@ function slugifyName(name = "") {
     .replace(/(^-|-$)/g, "");
 }
 
-// Make icon lookup tolerate both imageUrl and image; fall back to slug(name|title)
+/* --------------------------------------------------------
+   Known core badges used by the app (id -> icon + title).
+   This lets us recover when the API returns imageUrl="/icon-.png"
+   or omits "title" for the badge.
+--------------------------------------------------------- */
+const KNOWN_BADGE_ICONS = {
+  10: "/icon-trailblazer.png", // First checkpoint completed
+  6: "/icon-pathfinder.png",   // First full hunt completed
+  7: "/icon-speedrunner.png",  // Finished fast
+};
+const KNOWN_BADGE_TITLES = {
+  10: "Trailblazer",
+  6: "Pathfinder",
+  7: "Speedrunner",
+};
+
+// 🔧 EDIT: make icon lookup tolerant of bad/empty imageUrl ("/icon-.png")
+// and fall back to known icons by badge id, then slug(name|title), then generic.
 function getBadgeIcon(badge) {
-  if (badge?.imageUrl) return badge.imageUrl;
-  if (badge?.image) return badge.image;
+  const isBad = (u) =>
+    !u || u === "/icon-.png" || /\/icon-\.png$/i.test(u) || u === "/icon.png";
+  const rawUrl =
+    badge?.imageUrl ??
+    badge?.image ??
+    badge?.Badge?.image ??
+    null;
+
+  if (!isBad(rawUrl)) return rawUrl;
+
+  const id = Number(badge?.id ?? badge?.badgeId ?? badge?.badge_id ?? badge?.BadgeId);
+  if (id && KNOWN_BADGE_ICONS[id]) return KNOWN_BADGE_ICONS[id];
+
   const slug = slugifyName(badge?.name || badge?.title || "");
   return slug ? `/icon-${slug}.png` : "/icon-badges.png";
 }
@@ -72,19 +100,32 @@ const Profile = () => {
         setCreatedCount(Array.isArray(created) ? created.length : 0);
         setPlayedCount(Array.isArray(joined) ? joined.length : 0);
 
-        // Normalize badge shape from backend (snake_case/camel, title/image, etc.)
+        // Normalize badge shape; fill missing title using known ids
         const normalizedBadges = Array.isArray(badgesRaw)
           ? badgesRaw.map((b) => {
-              const badgeObj = {
-                id:
-                  b.id ??
-                  b.badgeId ??
-                  b.badge_id ??
-                  b.BadgeId ??
-                  b.Badge?.id ??
-                  null,
-                name: b.name ?? b.title ?? b.Badge?.title ?? "Badge",
-                title: b.title ?? b.name ?? b.Badge?.title ?? "Badge",
+              const id =
+                b.id ??
+                b.badgeId ??
+                b.badge_id ??
+                b.BadgeId ??
+                b.Badge?.id ??
+                null;
+
+              const title =
+                b.title ??
+                b.name ??
+                b.Badge?.title ??
+                KNOWN_BADGE_TITLES[id] ??
+                // last-ditch: try to infer from description
+                (typeof b.description === "string" &&
+                /first checkpoint/i.test(b.description)
+                  ? "Trailblazer"
+                  : null);
+
+              return {
+                id,
+                name: title ?? "Badge",
+                title: title ?? "Badge",
                 imageUrl: b.imageUrl ?? b.image ?? b.Badge?.image ?? null,
                 image: b.image ?? b.imageUrl ?? b.Badge?.image ?? null,
                 earnedAt:
@@ -95,7 +136,6 @@ const Profile = () => {
                   b.userBadge?.earnedAt ??
                   null,
               };
-              return badgeObj;
             })
           : [];
 
@@ -137,14 +177,13 @@ const Profile = () => {
     return String(name).trim().charAt(0).toUpperCase();
   }, [displayName, profile]);
 
-  // Prefer b.name || b.title and tolerate earnedAt vs earned_at
   const topBadges = useMemo(() => {
     const take = 6;
     const earned = badges.slice(0, take).map((b) => ({
       key: `b-${b.id}-${b.earnedAt || ""}`,
       locked: false,
       src: getBadgeIcon(b),
-      alt: b.name || b.title || "Badge",
+      alt: b.name || b.title || KNOWN_BADGE_TITLES[b.id] || "Badge",
     }));
     const placeholders = Array.from({
       length: Math.max(0, take - earned.length),
