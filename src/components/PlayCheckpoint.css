@@ -161,3 +161,86 @@
   .play-title{ font-size: 24px; }
   .play-map{ height: 220px; }
 }
+
+/* Tiny little additions, don't worry about these */
+/* alias classes used by the component */
+.label{ font-weight:700; margin-top:10px; margin-bottom:6px; }
+.input{
+  width:100%;
+  border-radius:14px;
+  border:2px solid rgba(255,255,255,.18);
+  background:#0a5255;
+  color:#cde7e4;
+  padding:12px 14px;
+  font-size:16px;
+  outline:none;
+}
+.input::placeholder{ color:#9dcac5; }
+.input:focus{
+  border-color:#ffd23a;
+  box-shadow:0 0 0 3px rgba(255,210,58,.25);
+}
+
+/* gps row + ghost button used in component */
+.gps-row{ display:flex; align-items:center; gap:12px; margin: 8px 0 12px; }
+.btn.ghost{
+  background: transparent;
+  color: #e9f6ee;
+  border: 2px solid rgba(233,246,238,.35);
+}
+.btn.ghost:hover{ background: rgba(233,246,238,.08); }
+
+/* map wrapper used in component */
+.map-wrap{
+  border-radius:16px;
+  overflow:hidden;
+  background:#08333a;
+}
+
+/* status + hint helpers */
+.status{ margin-top:10px; font-weight:700; }
+.hint{ margin-top:8px; font-size:14px; }
+.hint.error{
+  color:#ffe1e1;
+  background: rgba(255,64,64,.18);
+  border:1px solid rgba(255,64,64,.35);
+  padding:8px 10px; border-radius:10px;
+}
+.hint.warn{
+  color:#2b2300;
+  background: rgba(255,210,58,.18);
+  border:1px solid rgba(255,210,58,.45);
+  padding:8px 10px; border-radius:10px;
+}
+
+/* Badge unlock animation */
+.badge-unlock-modal{
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  gap: 10px;
+  pointer-events: none; /* non-blocking overlay */
+}
+
+.badge-unlock{
+  pointer-events: auto;
+  background: rgba(255,210,58,.15);
+  border: 1px solid rgba(255,210,58,.45);
+  color: #ffe892;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-weight: 800;
+  box-shadow: 0 10px 22px rgba(0,0,0,.35),
+              inset 0 0 0 2px rgba(255,255,255,.08);
+  animation: popAndGlow 900ms ease-out forwards;
+}
+
+/* pop + glow animation */
+@keyframes popAndGlow {
+  0%   { transform: scale(.6); opacity: 0; filter: drop-shadow(0 0 0 rgba(255,210,58,0)); }
+  60%  { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 16px rgba(255,210,58,.6)); }
+  100% { transform: scale(1.0); opacity: 1;  filter: drop-shadow(0 0 10px rgba(255,210,58,.35)); }
+}
