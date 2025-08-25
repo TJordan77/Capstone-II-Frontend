@@ -30,11 +30,14 @@ export default function Play() {
   const [anchoring, setAnchoring] = useState(false);
   const [anchorErr, setAnchorErr] = useState("");
 
+  // Badge unlock modal state
+  const [unlockedBadges, setUnlockedBadges] = useState([]);
+
   const joined =
     !!localStorage.getItem("userHuntId") ||
     localStorage.getItem(`joined:hunt:${huntRef}`) === "1";
 
-  // --- helpers ---
+  // Helpers
   const watcher = useRef(null);
 
   // Flat-earth distance (fine for small radii)
@@ -104,7 +107,7 @@ export default function Play() {
           setCheckpoint(null);
         } else {
           setCheckpoint(cp);
-          // If backend already provides these, fast‑path them
+          // If backend already provides these, fast-path them
           if (cp.huntTitle) setHuntTitle(cp.huntTitle);
           if (Number.isFinite(cp.checkpointCount))
             setTotalCheckpoints(cp.checkpointCount);
@@ -196,7 +199,7 @@ export default function Play() {
     }
   }
 
-  // Auto‑anchor once if: tutorial AND (coords missing OR distance > 1000m) AND we have a GPS fix
+  // Auto-anchor once if: tutorial AND (coords missing OR distance > 1000m) AND we have a GPS fix
   useEffect(() => {
     if (!isTutorial) return;
     const noCoords =
@@ -242,6 +245,14 @@ export default function Play() {
 
       if (correct) {
         setStatus("✅ Correct! Moving to the next checkpoint…");
+
+        // Show badge unlocks if any
+        if (Array.isArray(data.awardedBadges) && data.awardedBadges.length > 0) {
+          setUnlockedBadges(data.awardedBadges);
+          // auto-hide after 3 seconds
+          setTimeout(() => setUnlockedBadges([]), 3000);
+        }
+
         const nextId =
           data.nextCheckpointId ??
           data.nextCheckpoint?.id ??
@@ -393,6 +404,17 @@ export default function Play() {
         </form>
 
         {status ? <div className="status">{status}</div> : null}
+
+        {/* Simple badge unlock display */}
+        {unlockedBadges.length > 0 && (
+          <div className="badge-unlock-modal">
+            {unlockedBadges.map((b, idx) => (
+              <div key={idx} className="badge-unlock">
+                🎉 New badge unlocked! (id: {b.badgeId})
+              </div>
+            ))}
+          </div>
+        )}
 
         {!joined ? (
           <div className="footnote">
