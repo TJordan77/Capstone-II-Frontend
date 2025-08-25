@@ -119,7 +119,6 @@ const Profile = () => {
                 b.name ??
                 b.Badge?.title ??
                 KNOWN_BADGE_TITLES[id] ??
-                // Try to infer from description
                 (typeof b.description === "string" &&
                 /first checkpoint/i.test(b.description)
                   ? "Trailblazer"
@@ -180,18 +179,21 @@ const Profile = () => {
     return String(name).trim().charAt(0).toUpperCase();
   }, [displayName, profile]);
 
-  /* Only change: sort so core badges float into the first 6 */
+  // Sort so core badges float into the first 6 before rendering
   const topBadges = useMemo(() => {
+    const coreRank = (x) => CORE_ORDER[Number(x?.id)] ?? 999;
+    const isCore = (x) => coreRank(x) !== 999;
+
     const sorted = [...badges].sort((a, b) => {
-      const ea = a?.earnedAt ? new Date(a.earnedAt).getTime() : 0;
-      const eb = b?.earnedAt ? new Date(b.earnedAt).getTime() : 0;
-      if (ea !== eb) return eb - ea; // newest earned first
-      const pa = CORE_ORDER[a?.id] ?? 999;
-      const pb = CORE_ORDER[b?.id] ?? 999;
-      if (pa !== pb) return pa - pb; // core priority
-      return String(a?.title || a?.name || "").localeCompare(
-        String(b?.title || b?.name || "")
-      );
+      const ac = isCore(a), bc = isCore(b);
+      if (ac !== bc) return ac ? -1 : 1;            // core first
+      if (ac && bc) return coreRank(a) - coreRank(b); // both core → rank order
+      const ae = a?.earnedAt ? new Date(a.earnedAt).getTime() : 0;
+      const be = b?.earnedAt ? new Date(b.earnedAt).getTime() : 0;
+      if (ae !== be) return be - ae;                // newest first among non-core
+      const ai = Number(a?.id) || 0;
+      const bi = Number(b?.id) || 0;
+      return bi - ai;
     });
 
     const take = 6;
